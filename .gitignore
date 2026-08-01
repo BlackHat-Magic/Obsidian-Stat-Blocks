@@ -1,0 +1,25 @@
+# Build output
+main.js
+*.js.map
+!esbuild.config.mjs
+!version-bump.mjs
+
+# Dependencies
+node_modules/
+
+# Lockfiles (bun)
+bun.lockb
+bun.lock
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# TypeScript
+*.tsbuildinfo
+
+# OS / editor
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/

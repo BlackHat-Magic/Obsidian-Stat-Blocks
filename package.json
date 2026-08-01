@@ -1,0 +1,30 @@
+{
+  "name": "obsidian-stat-blocks",
+  "version": "0.1.0",
+  "description": "Render D&D 5e/5.5e monster stat blocks from TOML in Obsidian vaults.",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "typecheck": "tsc -noEmit -skipLibCheck",
+    "version": "node version-bump.mjs && git add manifest.json versions.json"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "dnd",
+    "stat-block",
+    "toml"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "builtin-modules": "^5.0.0",
+    "esbuild": "^0.23.0",
+    "obsidian": "^1.5.0",
+    "tslib": "^2.6.0",
+    "typescript": "^5.5.0"
+  }
+}
