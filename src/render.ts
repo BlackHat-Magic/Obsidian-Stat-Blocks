@@ -1,6 +1,5 @@
-import { App, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownRenderer } from "obsidian";
-import { TomlError } from "smol-toml";
-import { parse } from "smol-toml";
+import { App, Component, MarkdownPostProcessorContext, MarkdownRenderChild, MarkdownRenderer } from "obsidian";
+import { TomlError, parse } from "smol-toml";
 import type { ActionItem, AbilityKey, LanguageEntry, Monster } from "./types";
 import {
   ABILITY_KEYS,
@@ -79,21 +78,20 @@ function ensureArr<T>(v: T[] | undefined): T[] {
 class StatBlockRenderer {
   private app: App;
   private el: HTMLElement;
-  private ctx: MarkdownPostProcessorContext;
-  private child: MarkdownRenderChild;
+  private sourcePath: string;
+  private component: Component;
   private monster: Monster;
 
-  constructor(app: App, el: HTMLElement, ctx: MarkdownPostProcessorContext, monster: Monster) {
+  constructor(app: App, el: HTMLElement, sourcePath: string, component: Component, monster: Monster) {
     this.app = app;
     this.el = el;
-    this.ctx = ctx;
+    this.sourcePath = sourcePath;
+    this.component = component;
     this.monster = monster;
-    this.child = new MarkdownRenderChild(el);
-    ctx.addChild(this.child);
   }
 
   private renderMd(target: HTMLElement, md: string): void {
-    MarkdownRenderer.render(this.app, md, target, this.ctx.sourcePath, this.child);
+    MarkdownRenderer.render(this.app, md, target, this.sourcePath, this.component);
   }
 
   private divider(parent: HTMLElement, cls = "stat-block__divider"): HTMLHRElement {
@@ -324,11 +322,15 @@ class StatBlockRenderer {
   }
 }
 
-export function renderStatBlock(
+/** Render a stat block from raw TOML source into `el`, using `component` for
+ *  the lifecycle of markdown sub-renders (links, etc.). Shared by the
+ *  Reading-view code block processor and the Live Preview editor widget. */
+export function renderStatBlockInto(
   app: App,
   el: HTMLElement,
-  ctx: MarkdownPostProcessorContext,
   source: string,
+  sourcePath: string,
+  component: Component,
 ): void {
   el.empty();
   el.addClass("stat-block-container");
@@ -337,7 +339,7 @@ export function renderStatBlock(
     if (!data || typeof data !== "object") {
       throw new Error("Monster TOML is empty or not an object.");
     }
-    const renderer = new StatBlockRenderer(app, el, ctx, data);
+    const renderer = new StatBlockRenderer(app, el, sourcePath, component, data);
     renderer.render();
   } catch (err) {
     const box = el.createEl("div", { cls: "stat-block-error" });
@@ -345,4 +347,16 @@ export function renderStatBlock(
     const msg = err instanceof TomlError ? err.message : err instanceof Error ? err.message : String(err);
     box.createEl("pre", { text: msg });
   }
+}
+
+/** Reading-view entry point used by registerMarkdownCodeBlockProcessor. */
+export function renderStatBlock(
+  app: App,
+  el: HTMLElement,
+  ctx: MarkdownPostProcessorContext,
+  source: string,
+): void {
+  const child = new MarkdownRenderChild(el);
+  ctx.addChild(child);
+  renderStatBlockInto(app, el, source, ctx.sourcePath, child);
 }

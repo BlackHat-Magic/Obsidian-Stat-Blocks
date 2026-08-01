@@ -1,5 +1,5 @@
 import { Plugin } from "obsidian";
-import { monsterTomlHighlight } from "./editor";
+import { monsterStatBlockField } from "./editor";
 import { renderStatBlock } from "./render";
 
 const DEFAULT_SETTINGS = {} as const;
@@ -14,7 +14,10 @@ export default class StatBlocksPlugin extends Plugin {
       renderStatBlock(this.app, el, ctx, source);
     });
 
-    this.registerEditorExtension(monsterTomlHighlight);
+    // Live Preview: replace `monster` fenced blocks with a rendered stat block
+    // when the cursor is outside the block, and apply TOML syntax highlighting
+    // (via Obsidian's `tok-*` theme classes) when the cursor is inside.
+    this.registerEditorExtension(monsterStatBlockField);
   }
 
   async loadSettings() {
