@@ -1,4 +1,6 @@
 import { Plugin } from "obsidian";
+import { monsterTomlHighlight } from "./editor";
+import { renderStatBlock } from "./render";
 
 const DEFAULT_SETTINGS = {} as const;
 
@@ -7,13 +9,19 @@ export default class StatBlocksPlugin extends Plugin {
 
   override async onload() {
     await this.loadSettings();
+
+    this.registerMarkdownCodeBlockProcessor("monster", (source, el, ctx) => {
+      renderStatBlock(this.app, el, ctx, source);
+    });
+
+    this.registerEditorExtension(monsterTomlHighlight);
   }
 
-  async loadSettings(): Promise<void> {
+  async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
 
-  async saveSettings(): Promise<void> {
+  async saveSettings() {
     await this.saveData(this.settings);
   }
 }

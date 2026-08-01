@@ -1,1 +1,195 @@
-/* Stat Blocks */
+/*
+ * Stat Blocks plugin styles.
+ * Uses Obsidian theme CSS variables so the stat block inherits the vault's
+ * palette. Classic 5e-ish layout, but colors come from the active theme.
+ */
+
+.stat-block-container {
+  margin: 0.75em 0;
+}
+
+.stat-block {
+  --sb-border: var(--background-modifier-border);
+  --sb-accent: var(--text-accent);
+  --sb-text: var(--text-normal);
+  --sb-muted: var(--text-muted);
+  --sb-faint: var(--text-faint);
+  --sb-bg: var(--background-secondary);
+
+  background: var(--sb-bg);
+  border: 1px solid var(--sb-border);
+  border-top-width: 3px;
+  border-top-color: var(--sb-accent);
+  border-radius: var(--radius-s, 4px);
+  padding: 0.55em 1.1em 0.5em;
+  font-family: var(--font-text, "Noto Sans", Calibri, Helvetica, Arial, sans-serif);
+  color: var(--sb-text);
+  overflow-wrap: break-word;
+}
+
+.stat-block__name {
+  margin: 0.1em 0 0.05em;
+  text-align: center;
+  font-family: "Mr Eaves", "Noto Serif", "Merriweather", Georgia, "Times New Roman", var(--font-text), serif;
+  font-size: 1.6em;
+  font-weight: 700;
+  color: var(--sb-accent);
+  letter-spacing: 0.01em;
+}
+
+.stat-block__meta {
+  text-align: center;
+  margin: 0 0 0.4em;
+  color: var(--sb-muted);
+  font-style: italic;
+}
+
+.stat-block__flavor {
+  text-align: center;
+  margin: 0.45em 0 0.2em;
+  font-style: italic;
+  color: var(--sb-muted);
+}
+
+.stat-block__divider {
+  border: none;
+  border-top: 1px solid var(--sb-accent);
+  margin: 0.45em 0;
+}
+
+.stat-block__field {
+  margin: 0.18em 0;
+  line-height: 1.4;
+}
+
+.stat-block__field > p {
+  margin: 0;
+}
+
+.stat-block__field strong {
+  color: var(--sb-text);
+}
+
+.stat-block__abilities {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  margin: 0.25em 0;
+}
+
+.stat-block__abilities th {
+  font-weight: 700;
+  font-size: 0.85em;
+  letter-spacing: 0.05em;
+  color: var(--sb-muted);
+  padding: 0.1em 0.3em;
+  border-bottom: 1px solid var(--sb-border);
+}
+
+.stat-block__abilities td {
+  padding: 0.18em 0.3em;
+}
+
+.stat-block__ability-score {
+  font-weight: 700;
+}
+
+.stat-block__ability-mod {
+  color: var(--sb-muted);
+}
+
+.stat-block__challenge {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1em;
+}
+
+.stat-block__prof-bonus {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.stat-block__section {
+  font-variant: small-caps;
+  text-align: center;
+  font-size: 1.05em;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--sb-accent);
+  border-bottom: 1px solid var(--sb-accent);
+  margin: 0.65em 0 0.2em;
+  padding-bottom: 2px;
+}
+
+.stat-block__section-intro {
+  font-style: italic;
+  margin: 0.2em 0 0.4em;
+  color: var(--sb-muted);
+}
+
+.stat-block__trait {
+  margin: 0.3em 0;
+  line-height: 1.4;
+}
+
+.stat-block__trait > p:first-child {
+  margin: 0;
+}
+
+.stat-block__trait strong em,
+.stat-block__trait em strong {
+  font-style: italic;
+}
+
+.stat-block__trait strong {
+  color: var(--sb-text);
+}
+
+.stat-block__trait em {
+  color: var(--sb-text);
+}
+
+/* Rendered stat-block internal links/lists inherit Obsidian styles. */
+.stat-block a {
+  color: var(--text-accent);
+}
+
+.stat-block-error {
+  border: 1px solid var(--background-modifier-error, #c0392b);
+  background: var(--background-modifier-error, rgba(192, 57, 43, 0.1));
+  padding: 0.6em 1em;
+  border-radius: var(--radius-s, 6px);
+  color: var(--text-error, #c0392b);
+  font-size: 0.9em;
+}
+
+.stat-block-error pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0.3em 0 0;
+  font-size: 0.85em;
+  color: var(--text-normal);
+}
+
+/* Editor: ensure monster codeblock content reads like TOML by keeping
+   Obsidian's codeblock typography while our mark decorations add tokens. */
+.cm-line .tok-property {
+  color: var(--text-accent);
+}
+.cm-line .tok-atom,
+.cm-line .tok-bracket,
+.cm-line .tok-operator {
+  color: var(--text-normal);
+}
+.cm-line .tok-number {
+  color: var(--text-accent);
+}
+.cm-line .tok-string,
+.cm-line .tok-string-2 {
+  color: var(--text-normal);
+}
+.cm-line .tok-comment {
+  color: var(--text-faint);
+  font-style: italic;
+}
