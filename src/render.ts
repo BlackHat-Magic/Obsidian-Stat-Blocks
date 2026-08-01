@@ -20,6 +20,7 @@ import {
   xpForCR,
 } from "./calc";
 import { finalizeDescription, itemSuffix, presetDescription } from "./presets";
+import { substitute } from "./template";
 
 const EMPTY: ActionItem[] = [];
 
@@ -129,7 +130,7 @@ class StatBlockRenderer {
     // AC
     const ac = armorClass(m);
     let acText = `**Armor Class** ${ac}`;
-    if (m.stats?.armor && m.stats.armor.trim()) acText += ` (*${m.stats.armor.trim()}*)`;
+    if (m.stats?.armor && m.stats.armor.trim()) acText += ` (${m.stats.armor.trim()})`;
     const acEl = el.createEl("p", { cls: "stat-block__field" });
     this.renderMd(acEl, acText);
 
@@ -234,25 +235,25 @@ class StatBlockRenderer {
 
     this.divider(el);
 
-    // Sections
-    this.renderSection(el, "Traits", ensureArr(m.ability));
+    // Sections. Traits have no header in the standard 5e layout.
+    this.renderSection(el, "", ensureArr(m.ability));
     this.renderSection(el, "Actions", ensureArr(m.action));
     this.renderSection(el, "Bonus Actions", ensureArr(m.bonus_action));
     this.renderSection(el, "Reactions", ensureArr(m.reaction));
 
     if (ensureArr(m.legendary_action).length > 0) {
       this.renderSection(el, "Legendary Actions", ensureArr(m.legendary_action), {
-        intro: this.legendaryIntro(),
+        intro: substitute(m.legendary_description || this.legendaryIntro(), this.monster),
       });
     }
     if (ensureArr(m.villain_action).length > 0) {
       this.renderSection(el, "Villain Actions", ensureArr(m.villain_action), {
-        intro: m.villain_description || this.defaultVillainIntro(),
+        intro: substitute(m.villain_description || this.defaultVillainIntro(), this.monster),
       });
     }
     if (m.is_mythic && (m.is_legendary || m.is_villain) && ensureArr(m.mythic_action).length > 0) {
       this.renderSection(el, "Mythic Actions", ensureArr(m.mythic_action), {
-        intro: m.mythic_description || this.defaultMythicIntro(),
+        intro: substitute(m.mythic_description || this.defaultMythicIntro(), this.monster),
       });
     }
   }
@@ -286,7 +287,7 @@ class StatBlockRenderer {
     opts: { intro?: string } = {},
   ): void {
     if (!items || items.length === 0) return;
-    parent.createEl("h3", { cls: "stat-block__section", text: title });
+    if (title) parent.createEl("h3", { cls: "stat-block__section", text: title });
     if (opts.intro) {
       const ip = parent.createEl("p", { cls: "stat-block__section-intro" });
       this.renderMd(ip, `*${opts.intro}*`);
@@ -310,15 +311,12 @@ class StatBlockRenderer {
     if (name && !/[.!?:]$/.test(name)) name = `${name}.`;
     description = finalizeDescription(description, this.monster);
 
+    // Render the whole trait as a single markdown paragraph so the bold/italic
+    // name and the description share one <p> (same line, wrapping naturally)
+    // and any markdown formatting in both still resolves.
+    const md = name ? `***${name}*** ${description}` : description;
     const p = parent.createEl("p", { cls: "stat-block__trait" });
-    if (name) {
-      const nameWrap = p.createEl("strong");
-      const ital = nameWrap.createEl("em");
-      ital.setText(name);
-      p.append(" ");
-    }
-    const descEl = p.createEl("span", { cls: "stat-block__trait-desc" });
-    this.renderMd(descEl, description);
+    this.renderMd(p, md);
   }
 }
 

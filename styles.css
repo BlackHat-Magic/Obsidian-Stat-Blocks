@@ -8,6 +8,17 @@
   margin: 0.75em 0;
 }
 
+.stat-block-container--live {
+  margin: 0.75em 0;
+}
+
+/* Live Preview: the CM6 block widget that replaces the ```monster fence.
+   Make the wrapper fill the editor width so the stat block isn't clipped. */
+.cm-widget:has(.stat-block-container--live) {
+  width: 100%;
+  display: block;
+}
+
 .stat-block {
   --sb-border: var(--background-modifier-border);
   --sb-accent: var(--text-accent);
@@ -29,7 +40,7 @@
 
 .stat-block__name {
   margin: 0.1em 0 0.05em;
-  text-align: center;
+  text-align: left;
   font-family: "Mr Eaves", "Noto Serif", "Merriweather", Georgia, "Times New Roman", var(--font-text), serif;
   font-size: 1.6em;
   font-weight: 700;
@@ -38,14 +49,14 @@
 }
 
 .stat-block__meta {
-  text-align: center;
+  text-align: left;
   margin: 0 0 0.4em;
   color: var(--sb-muted);
   font-style: italic;
 }
 
 .stat-block__flavor {
-  text-align: center;
+  text-align: left;
   margin: 0.45em 0 0.2em;
   font-style: italic;
   color: var(--sb-muted);
@@ -64,10 +75,6 @@
 
 .stat-block__field > p {
   margin: 0;
-}
-
-.stat-block__field strong {
-  color: var(--sb-text);
 }
 
 .stat-block__abilities {
@@ -112,7 +119,7 @@
 
 .stat-block__section {
   font-variant: small-caps;
-  text-align: center;
+  text-align: left;
   font-size: 1.05em;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -137,18 +144,7 @@
   margin: 0;
 }
 
-.stat-block__trait strong em,
-.stat-block__trait em strong {
-  font-style: italic;
-}
-
-.stat-block__trait strong {
-  color: var(--sb-text);
-}
-
-.stat-block__trait em {
-  color: var(--sb-text);
-}
+/* Don't override bold/italic colors — let the active theme style them. */
 
 /* Rendered stat-block internal links/lists inherit Obsidian styles. */
 .stat-block a {
