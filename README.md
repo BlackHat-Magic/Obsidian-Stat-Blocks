@@ -1,34 +1,26 @@
 <div align="center">
 
-# Project Title
+# Obsidian Stat Blocks
 
-Project Description
+Template and Plugin for Obsidian to create Stat Blocks for D&D 5e/5.5e
 
 </div>
 
 
 ## Overview
 
-Project details
+A simple Obsidian plugin to render 5e/5.5e monster stat blocks specified as TOML files nicely in Obsidian vaults.
 
 ### Goals
 
 List main objectives, problems you aim to solve.
 
-### Features
-
-- [x] Feature 1
-- [x] Feature 2
-- [ ] Feature 3
-
 ### Software Stack / Technologies Used
 
-- Language: ...
-- Framework: ...
-- Database: ...
-- etc...
+- Language: JavaScript/TypeScript(?), HTML/JSX/TSX(?), CSS(?), TOML
+- Framework: idk man.
 
 ## Quickstart
 
-Summary for developers with links to setup, build, test instructions in wiki or docs.
+TODO
 
