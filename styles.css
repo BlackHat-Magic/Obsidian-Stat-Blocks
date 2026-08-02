@@ -130,7 +130,6 @@
 }
 
 .stat-block__section-intro {
-  font-style: italic;
   margin: 0.2em 0 0.4em;
   color: var(--sb-muted);
 }

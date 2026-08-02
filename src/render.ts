@@ -113,7 +113,8 @@ class StatBlockRenderer {
     // Meta: size type (tag), alignment
     const b = m.basics ?? {};
     const typeStr = [b.type, b.tag ? `(${b.tag})` : ""].filter(Boolean).join(" ");
-    const metaParts = [b.size, typeStr, b.alignment].filter(Boolean).join(", ");
+    const creatureType = [b.size, typeStr].filter(Boolean).join(" ");
+    const metaParts = [creatureType, b.alignment].filter(Boolean).join(", ");
     if (metaParts) {
       const meta = el.createEl("p", { cls: "stat-block__meta" });
       this.renderMd(meta, `*${metaParts}*`);
@@ -290,7 +291,7 @@ class StatBlockRenderer {
     if (title) parent.createEl("h3", { cls: "stat-block__section", text: title });
     if (opts.intro) {
       const ip = parent.createEl("p", { cls: "stat-block__section-intro" });
-      this.renderMd(ip, `*${opts.intro}*`);
+      this.renderMd(ip, opts.intro);
     }
     for (const item of items) {
       this.renderItem(parent, item);
