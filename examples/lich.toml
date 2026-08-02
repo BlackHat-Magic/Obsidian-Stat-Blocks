@@ -1,0 +1,91 @@
+# Adapted from the Lich stat block in SRD 5.1.
+# Lair actions are not currently represented by the plugin schema.
+
+name = "Lich"
+shortened_name = "the lich"
+shortened_plural = ""
+
+is_legendary = true
+legendary_description = "{{MON}} can take 3 legendary actions, choosing from the options below. Only one legendary action can be used at a time and only at the end of another creature's turn. {{MON}} regains spent legendary actions at the start of its turn."
+is_villain = false
+villain_description = ""
+is_mythic = false
+mythic_description = ""
+
+[basics]
+size = "medium"
+type = "undead"
+tag = ""
+alignment = "any evil alignment"
+flavor = ""
+
+[stats]
+base_ac = 17
+add_dex = false
+max_dex = -1
+armor = "natural armor"
+hit_dice = 18
+speed = [30, 0, 0, 0, 0]
+ability_scores = [11, 16, 16, 20, 14, 16]
+
+[proficiencies]
+saves = ["con", "int", "wis"]
+skills = ["arcana", "history", "insight", "perception"]
+expertise = []
+damage_resistances = ["cold, lightning, necrotic"]
+damage_immunities = ["poison", "bludgeoning, piercing, and slashing from nonmagical attacks"]
+condition_immunities = ["charmed, exhaustion, frightened, paralyzed, poisoned"]
+senses = [0, 0, 0, 120, 0]
+challenge = 21
+
+[[language]]
+name = "common plus up to five other languages"
+status = "speaks"
+but = ""
+
+[[ability]]
+name = "Legendary Resistance"
+preset = "legendary_resistance"
+uses = 3
+interval = "Day"
+proper_noun = true
+
+[[ability]]
+name = "Rejuvenation"
+preset = ""
+description = "If {{MON}} has a phylactery, a destroyed lich gains a new body in 1d10 days, regaining all its hit points and becoming active again. The new body appears within 5 feet of the phylactery."
+
+[[ability]]
+name = "Spellcasting"
+preset = ""
+description = "{{MON}} is an 18th-level spellcaster. Its spellcasting ability is Intelligence (spell save DC 20, {{INT ATK}} to hit with spell attacks). {{MON}} has the following wizard spells prepared: Cantrips (at will): *mage hand*, *prestidigitation*, *ray of frost*; 1st level (4 slots): *detect magic*, *magic missile*, *shield*, *thunderwave*; 2nd level (3 slots): *detect thoughts*, *invisibility*, *Melf's acid arrow*, *mirror image*; 3rd level (3 slots): *animate dead*, *counterspell*, *dispel magic*, *fireball*; 4th level (3 slots): *blight*, *dimension door*; 5th level (3 slots): *cloudkill*, *scrying*; 6th level (1 slot): *disintegrate*, *globe of invulnerability*; 7th level (1 slot): *finger of death*, *plane shift*; 8th level (1 slot): *dominate monster*, *power word stun*; 9th level (1 slot): *power word kill*."
+
+[[ability]]
+name = "Turn Resistance"
+preset = ""
+description = "{{MON}} has advantage on saving throws against any effect that turns undead."
+
+[[action]]
+name = "Paralyzing Touch"
+preset = ""
+description = "*Melee Spell Attack:* {{INT ATK}} to hit, reach 5 ft., one creature. *Hit:* {{3D6}} cold damage. The target must succeed on a DC 18 Constitution saving throw or be paralyzed for 1 minute. The target can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success."
+
+[[legendary_action]]
+name = "Cantrip"
+preset = ""
+description = "{{MON}} casts a cantrip."
+
+[[legendary_action]]
+name = "Paralyzing Touch (Costs 2 Actions)"
+preset = ""
+description = "{{MON}} uses its Paralyzing Touch."
+
+[[legendary_action]]
+name = "Frightening Gaze (Costs 2 Actions)"
+preset = ""
+description = "{{MON}} fixes its gaze on one creature it can see within 10 feet of it. The target must succeed on a DC 18 Wisdom saving throw against this magic or become frightened for 1 minute. The frightened target can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. If a target's saving throw is successful or the effect ends for it, the target is immune to {{MON}}'s gaze for the next 24 hours."
+
+[[legendary_action]]
+name = "Disrupt Life (Costs 3 Actions)"
+preset = ""
+description = "Each non-undead creature within 20 feet of {{MON}} must make a DC 18 Constitution saving throw against this magic, taking {{6D6}} necrotic damage on a failed save, or half as much damage on a successful one."

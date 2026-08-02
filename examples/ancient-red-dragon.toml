@@ -1,0 +1,103 @@
+# Adapted from the Ancient Red Dragon stat block in SRD 5.1.
+# Lair and regional effects are not currently represented by the plugin schema.
+
+name = "Ancient Red Dragon"
+shortened_name = "the dragon"
+shortened_plural = ""
+
+is_legendary = true
+legendary_description = "{{MON}} can take 3 legendary actions, choosing from the options below. Only one legendary action can be used at a time and only at the end of another creature's turn. {{MON}} regains spent legendary actions at the start of its turn."
+is_villain = false
+villain_description = ""
+is_mythic = false
+mythic_description = ""
+
+[basics]
+size = "gargantuan"
+type = "dragon"
+tag = ""
+alignment = "chaotic evil"
+flavor = ""
+
+[stats]
+base_ac = 22
+add_dex = false
+max_dex = -1
+armor = "natural armor"
+hit_dice = 28
+speed = [40, 0, 40, 80, 0]
+ability_scores = [30, 10, 29, 18, 15, 23]
+
+[proficiencies]
+saves = ["dex", "con", "wis", "cha"]
+skills = ["perception", "stealth"]
+expertise = []
+damage_resistances = []
+damage_immunities = ["fire"]
+condition_immunities = []
+senses = [60, 120, 0, 0, 0]
+challenge = 24
+
+[[language]]
+name = "common"
+status = "speaks"
+but = ""
+
+[[language]]
+name = "draconic"
+status = "speaks"
+but = ""
+
+[[ability]]
+name = "Legendary Resistance"
+preset = "legendary_resistance"
+uses = 3
+interval = "Day"
+proper_noun = true
+
+[[action]]
+name = "Multiattack"
+preset = ""
+description = "{{MON}} can use its Frightful Presence. It then makes three attacks: one with its bite and two with its claws."
+
+[[action]]
+name = "Bite"
+preset = ""
+description = "*Melee Weapon Attack:* {{STR ATK}} to hit, reach 15 ft., one target. *Hit:* {{STR 2D10}} piercing damage plus {{4D6}} fire damage."
+
+[[action]]
+name = "Claw"
+preset = ""
+description = "*Melee Weapon Attack:* {{STR ATK}} to hit, reach 10 ft., one target. *Hit:* {{STR 2D6}} slashing damage."
+
+[[action]]
+name = "Tail"
+preset = ""
+description = "*Melee Weapon Attack:* {{STR ATK}} to hit, reach 20 ft., one target. *Hit:* {{STR 2D8}} bludgeoning damage."
+
+[[action]]
+name = "Frightful Presence"
+preset = ""
+description = "Each creature of {{MON}}'s choice that is within 120 feet of {{MON}} and aware of it must succeed on a DC 21 Wisdom saving throw or become frightened for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. If a creature's saving throw is successful or the effect ends for it, the creature is immune to {{MON}}'s Frightful Presence for the next 24 hours."
+
+[[action]]
+name = "Fire Breath"
+preset = ""
+recharge_min = 5
+recharge_max = 6
+description = "{{MON}} exhales fire in a 90-foot cone. Each creature in that area must make a DC {{CON SAVE}} Dexterity saving throw, taking {{26D6}} fire damage on a failed save, or half as much damage on a successful one."
+
+[[legendary_action]]
+name = "Detect"
+preset = ""
+description = "{{MON}} makes a Wisdom (Perception) check."
+
+[[legendary_action]]
+name = "Tail Attack"
+preset = ""
+description = "{{MON}} makes a tail attack."
+
+[[legendary_action]]
+name = "Wing Attack (Costs 2 Actions)"
+preset = ""
+description = "{{MON}} beats its wings. Each creature within 15 feet of {{MON}} must succeed on a DC 25 Dexterity saving throw or take {{STR 2D6}} bludgeoning damage and be knocked prone. {{MON}} can then fly up to half its flying speed."

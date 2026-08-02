@@ -2,79 +2,42 @@
 
 # Obsidian Stat Blocks
 
-Template and Plugin for Obsidian to create Stat Blocks for D&D 5e/5.5e
+An Obsidian plugin for creating D&D 5e/5.5e stat blocks from TOML.
 
 </div>
 
-
 ## Overview
 
-A simple Obsidian plugin to render 5e/5.5e monster stat blocks specified as TOML
-nicely in Obsidian vaults.
+Write a fenced `monster` code block in an Obsidian Markdown note. In Live Preview, it renders as a themed stat block when the cursor is outside the block and becomes editable TOML when the cursor enters it. Reading view always shows the rendered stat block.
 
-Write a fenced code block with the `monster` language:
-
-<pre>
-```monster
-name = "Randhanu"
-
-[basics]
-size      = "gargantuan"
-type      = "celestial"
-alignment = "chaotic good"
-flavor    = "A gargantuan fish ..."
-
-[stats]
-base_ac         = 15
-add_dex         = true
-armor           = "natural armor"
-hit_dice        = 14
-speed           = [0, 0, 0, 0, 90]
-ability_scores  = [22, 17, 22, 18, 22, 25]
-
-[proficiencies]
-saves                  = ["dex", "con", "cha"]
-skills                 = ["perception", "persuasion"]
-condition_immunities   = ["charmed", "exhaustion", "frightened"]
-senses                 = [0, 120, 0, 60, 120]
-challenge              = 16
-
-[[action]]
-name        = "Bite"
-description = "*Melee Weapon Attack:* {{STR ATK}} to hit, reach 5 ft., one target. *Hit:* {{STR 3D10}} piercing damage."
-```
-</pre>
-
-While your editing cursor is **inside** the block, you get Obsidian's TOML
-syntax highlighting on the raw source. As soon as the cursor leaves the block,
-it is replaced by a rendered stat block (in your vault's theme colors).
-
-See [`randhanu.toml`](./randhanu.toml) for a full example and
-[`format.md`](./format.md) / [`presets.md`](./presets.md) for the
-`{{...}}` token and preset syntax.
-
-### Software Stack / Technologies Used
-
-- Language: TypeScript
-- Target: Obsidian 1.5+ (CodeMirror 6 based editor)
-- Parsing: TOML via [`smol-toml`](https://www.npmjs.com/package/smol-toml)
-- Editor highlighting: CM6 `ViewPlugin` with the `@codemirror/legacy-modes`
-  TOML stream parser
-- Rendering: `registerMarkdownCodeBlockProcessor` + `MarkdownRenderer` (so
-  wiki links, hyperlinks, and markdown formatting remain live inside the
-  stat block text)
-- Build: esbuild, bun
+Start with the [usage guide](docs/usage.md), then see the [format token reference](docs/format.md), [preset reference](docs/presets.md), or the [`Ancient Red Dragon`](examples/ancient-red-dragon.toml) and [`Lich`](examples/lich.toml) examples.
 
 ## Quickstart
 
 ```bash
 bun install
-bun run dev     # watch build -> main.js (with inline sourcemaps)
+bun run dev     # watch build with inline sourcemaps
 # or
-bun run build   # production build (typecheck + minified main.js)
+bun run build   # typecheck and production bundle
 ```
 
-To use the plugin in a vault, copy `main.js`, `manifest.json`, and
-`styles.css` into `<vault>/.obsidian/plugins/obsidian-stat-blocks/` and
-enable "Stat Blocks" in Settings → Community plugins. Reload Obsidian after
-editing the plugin.
+Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugins/obsidian-stat-blocks/`, enable **Stat Blocks** under **Settings → Community plugins**, and reload Obsidian after rebuilding.
+
+## Features
+
+- TOML-backed `monster` code blocks.
+- Live Preview rendering with cursor-based source editing.
+- TOML syntax highlighting while editing.
+- Calculated ability modifiers, attack bonuses, save DCs, damage averages, hit points, proficiency bonuses, and XP.
+- Traits, actions, bonus actions, reactions, legendary actions, villain actions, and mythic actions.
+- Markdown rendering inside stat block text, including wiki links, hyperlinks, emphasis, and other formatting.
+- Theme-aware styling using Obsidian CSS variables.
+
+## Project Stack
+
+- TypeScript
+- Obsidian 1.5+
+- `smol-toml`
+- CodeMirror 6 and `@codemirror/legacy-modes`
+- esbuild
+- Bun
