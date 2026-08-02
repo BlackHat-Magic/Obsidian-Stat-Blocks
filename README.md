@@ -6,7 +6,7 @@ An Obsidian plugin for creating D&D 5e/5.5e stat blocks from TOML.
 
 </div>
 
-![Rendered Ancient Red Dragon stat block](examples/Ancient Red Dragon.png)
+![Rendered Ancient Red Dragon stat block](examples/Ancient%20Red%20Dragon.png)
 
 ## Overview
 
