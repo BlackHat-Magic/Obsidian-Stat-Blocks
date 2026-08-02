@@ -2,8 +2,9 @@
 # Lair and regional effects are not currently represented by the plugin schema.
 
 name = "Ancient Red Dragon"
-shortened_name = "the dragon"
+shortened_name = "dragon"
 shortened_plural = ""
+proper_noun = false
 
 is_legendary = true
 legendary_description = "{{MON}} can take 3 legendary actions, choosing from the options below. Only one legendary action can be used at a time and only at the end of another creature's turn. {{MON}} regains spent legendary actions at the start of its turn."
@@ -53,7 +54,6 @@ name = "Legendary Resistance"
 preset = "legendary_resistance"
 uses = 3
 interval = "Day"
-proper_noun = true
 
 [[action]]
 name = "Multiattack"
@@ -67,13 +67,21 @@ description = "*Melee Weapon Attack:* {{STR ATK}} to hit, reach 15 ft., one targ
 
 [[action]]
 name = "Claw"
-preset = ""
-description = "*Melee Weapon Attack:* {{STR ATK}} to hit, reach 10 ft., one target. *Hit:* {{STR 2D6}} slashing damage."
+preset = "attack"
+ability = "str"
+reach = 10
+die_count = 2
+die_size = 6
+damage_type = "slashing"
 
 [[action]]
 name = "Tail"
-preset = ""
-description = "*Melee Weapon Attack:* {{STR ATK}} to hit, reach 20 ft., one target. *Hit:* {{STR 2D8}} bludgeoning damage."
+preset = "attack"
+ability = "str"
+reach = 20
+die_count = 2
+die_size = 8
+damage_type = "bludgeoning"
 
 [[action]]
 name = "Frightful Presence"

@@ -41,7 +41,7 @@ uses = 3
 interval = "Day"
 ```
 
-This renders `Legendary Resistance (3/Day).` followed by the standard resistance text. Set `proper_noun = true` to omit the article before the monster name.
+This renders `Legendary Resistance (3/Day).` followed by the standard resistance text. The monster-level `proper_noun` setting controls whether `the` is added to its shortened name.
 
 ## `spellcasting`
 
@@ -65,4 +65,4 @@ Fields:
 | `ability` | Innate spellcasting ability. |
 | `spells` | Groups of `[uses_per_day, spell_list]`. A uses value of `-1` renders as `At will`; other values render as `N/day each`. |
 
-Set `proper_noun = true` when the monster's name should not be preceded by `the`.
+The monster-level `proper_noun` setting also controls the article used in generated spellcasting text.

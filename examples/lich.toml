@@ -2,8 +2,9 @@
 # Lair actions are not currently represented by the plugin schema.
 
 name = "Lich"
-shortened_name = "the lich"
+shortened_name = "lich"
 shortened_plural = ""
+proper_noun = false
 
 is_legendary = true
 legendary_description = "{{MON}} can take 3 legendary actions, choosing from the options below. Only one legendary action can be used at a time and only at the end of another creature's turn. {{MON}} regains spent legendary actions at the start of its turn."
@@ -48,7 +49,6 @@ name = "Legendary Resistance"
 preset = "legendary_resistance"
 uses = 3
 interval = "Day"
-proper_noun = true
 
 [[ability]]
 name = "Rejuvenation"

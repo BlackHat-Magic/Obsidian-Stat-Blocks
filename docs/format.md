@@ -4,8 +4,8 @@ Descriptions support template tokens inside `{{...}}`. Tokens are expanded befor
 
 | Token | Result |
 | --- | --- |
-| `{{MON}}` | Monster name, or `shortened_name` when provided. |
-| `{{MONS}}` | `shortened_plural` when provided, otherwise the monster name. |
+| `{{MON}}` | Monster name, or `shortened_name` when provided. When `proper_noun = false` and a shortened name is used, `the` is prepended automatically. The first character is capitalized when the token starts a sentence. |
+| `{{MONS}}` | `shortened_plural` when provided, otherwise the monster name. The first character is capitalized when the token starts a sentence. |
 | `{{CHA}}` | Signed Charisma modifier, such as `+7`. The same form works for every ability: `STR`, `DEX`, `CON`, `INT`, `WIS`, and `CHA`. |
 | `{{3D6}}` | Average damage plus the dice expression, such as `10 (3d6)`. Averages are rounded down. |
 | `{{STR ATK}}` | Strength attack modifier, including proficiency bonus. |

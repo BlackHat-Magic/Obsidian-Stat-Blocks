@@ -282,7 +282,12 @@ export function telepathyFt(m: Monster): number | null {
 }
 
 export function displayName(m: Monster): string {
-  return (m.shortened_name && m.shortened_name.trim()) || m.name || "the monster";
+  const shortened = m.shortened_name?.trim();
+  if (shortened) {
+    if (m.proper_noun || /^the\b/i.test(shortened)) return shortened;
+    return `the ${shortened}`;
+  }
+  return m.name || "the monster";
 }
 
 export function pluralName(m: Monster): string {

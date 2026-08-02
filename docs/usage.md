@@ -20,6 +20,8 @@ Add a fenced `monster` block to any Markdown note:
 ````markdown
 ```monster
 name = "Ancient Red Dragon"
+shortened_name = "dragon"
+proper_noun = false
 
 [basics]
 size = "gargantuan"
@@ -66,7 +68,7 @@ Use escaped TOML quotes where necessary, or single-quoted TOML strings when a va
 
 The main sections are:
 
-- Top-level identity and flags: `name`, `shortened_name`, `shortened_plural`, `is_legendary`, `is_villain`, `is_mythic`, and their descriptions.
+- Top-level identity and flags: `name`, `shortened_name`, `shortened_plural`, `proper_noun`, `is_legendary`, `is_villain`, `is_mythic`, and their descriptions. Set `proper_noun = false` with `shortened_name = "dragon"` to make `{{MON}}` render as `the dragon`.
 - `[basics]`: `size`, `type`, `tag`, `alignment`, `flavor`.
 - `[stats]`: AC inputs, armor note, hit-dice count, speeds, and the six ability scores.
 - `[proficiencies]`: saves, skills, expertise, defenses, senses, and challenge rating.

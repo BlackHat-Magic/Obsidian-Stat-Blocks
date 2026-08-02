@@ -109,12 +109,22 @@ function parseToken(inner: string): Token | null {
 
 const TOKEN_RE = /\{\{([^{}]*)\}\}/g;
 
+function isSentenceStart(text: string, offset: number): boolean {
+  const before = text.slice(0, offset);
+  return /(?:^|[.!?]\s+|\n\s*)$/.test(before);
+}
+
+function capitalizeFirst(value: string): string {
+  return value.length === 0 ? value : value[0].toUpperCase() + value.slice(1);
+}
+
 /** Substitute all {{...}} tokens. Unknown tokens are left untouched. */
 export function substitute(text: string, m: Monster): string {
   if (!text) return text;
-  return text.replace(TOKEN_RE, (whole, inner: string) => {
+  return text.replace(TOKEN_RE, (whole, inner: string, offset: number, fullText: string) => {
     const token = parseToken(inner);
     if (!token) return whole;
-    return token.apply(m);
+    const value = token.apply(m);
+    return isSentenceStart(fullText, offset) ? capitalizeFirst(value) : value;
   });
 }

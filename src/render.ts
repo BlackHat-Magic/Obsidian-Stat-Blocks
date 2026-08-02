@@ -303,7 +303,7 @@ class StatBlockRenderer {
 
     const preset = (item.preset ?? "").trim().toLowerCase();
     if (preset !== "" && preset !== "none") {
-      const synth = presetDescription(item);
+      const synth = presetDescription(item, this.monster);
       if (synth != null) description = synth;
       if (preset === "legendary_resistance" && !name) name = "Legendary Resistance";
     }

@@ -44,12 +44,19 @@ function normalizeAbility(a: string | undefined): AbilityKey {
   return "wis";
 }
 
+function subject(m: Monster, capitalize = false): string {
+  const base = m.shortened_name?.trim() || m.name || "monster";
+  const withArticle = Boolean(m.shortened_name?.trim() && !m.proper_noun);
+  const phrase = withArticle ? `the ${base}` : base;
+  return capitalize ? phrase.charAt(0).toUpperCase() + phrase.slice(1) : phrase;
+}
+
 /**
  * Synthesize the markdown description for a preset ability/action.
  * Returns null when the preset is empty/unknown, so the caller falls back
  * to the item's own `description`.
  */
-export function presetDescription(item: ActionItem): string | null {
+export function presetDescription(item: ActionItem, m: Monster): string | null {
   const preset = (item.preset ?? "").trim().toLowerCase();
   if (preset === "" || preset === "none") return null;
 
@@ -81,12 +88,10 @@ export function presetDescription(item: ActionItem): string | null {
     }
 
     case "legendary_resistance": {
-      const article = item.proper_noun ? "" : "the ";
-      return `If ${article}{{MON}} fails a saving throw, it can choose to succeed instead.`;
+      return `If ${subject(m)} fails a saving throw, it can choose to succeed instead.`;
     }
 
     case "spellcasting": {
-      const article = item.proper_noun ? "" : "The ";
       const ability = normalizeAbility(item.ability as string);
       const abU = ability.toUpperCase();
       const level = item.level ?? 1;
@@ -94,7 +99,7 @@ export function presetDescription(item: ActionItem): string | null {
       const spells = item.spells;
       const lines: string[] = [];
       lines.push(
-        `${article}{{MON}} is a ${level}-level spellcaster. Its spellcasting ability is ${abilityLong(ability)} (spell save DC {{${abU} SAVE}}, {{${abU} ATK}} to hit with spell attacks). ${article}{{MON}} has the following ${cls} spells prepared:`,
+        `${subject(m, true)} is a ${level}-level spellcaster. Its spellcasting ability is ${abilityLong(ability)} (spell save DC {{${abU} SAVE}}, {{${abU} ATK}} to hit with spell attacks). ${subject(m, true)} has the following ${cls} spells prepared:`,
       );
       lines.push("");
       if (Array.isArray(spells)) {
@@ -115,13 +120,12 @@ export function presetDescription(item: ActionItem): string | null {
     }
 
     case "innate_spellcasting": {
-      const article = item.proper_noun ? "" : "The ";
       const ability = normalizeAbility(item.ability as string);
       const abU = ability.toUpperCase();
       const spells = item.spells;
       const lines: string[] = [];
       lines.push(
-        `${article}{{MON}}'s innate spellcasting ability is ${abilityLong(ability)} (spell save DC {{${abU} SAVE}}, {{${abU} ATK}} to hit with spell attacks). ${article}{{MON}} can innately cast the following spells, requiring no material components:`,
+        `${subject(m, true)}'s innate spellcasting ability is ${abilityLong(ability)} (spell save DC {{${abU} SAVE}}, {{${abU} ATK}} to hit with spell attacks). ${subject(m, true)} can innately cast the following spells, requiring no material components:`,
       );
       lines.push("");
       if (Array.isArray(spells)) {

@@ -17,8 +17,6 @@ export interface ActionItem {
   cost?: number | string;
   initiative?: number | string;
   trigger?: string;
-  proper_noun?: boolean;
-
   // attack preset
   reach?: number | null;
   short_range?: number | null;
@@ -75,6 +73,7 @@ export interface Monster {
   name?: string;
   shortened_name?: string;
   shortened_plural?: string;
+  proper_noun?: boolean;
 
   is_legendary?: boolean;
   legendary_description?: string;
