@@ -6,6 +6,8 @@ An Obsidian plugin for creating D&D 5e/5.5e stat blocks from TOML.
 
 </div>
 
+![Rendered Ancient Red Dragon stat block](examples/Ancient Red Dragon.png)
+
 ## Overview
 
 Write a fenced `monster` code block in an Obsidian Markdown note. In Live Preview, it renders as a themed stat block when the cursor is outside the block and becomes editable TOML when the cursor enters it. Reading view always shows the rendered stat block.
