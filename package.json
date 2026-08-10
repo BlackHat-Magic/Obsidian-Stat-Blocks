@@ -1,6 +1,6 @@
 {
   "name": "obsidian-stat-blocks",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Render D&D 5e/5.5e monster stat blocks from TOML in Obsidian vaults.",
   "main": "main.js",
   "type": "module",

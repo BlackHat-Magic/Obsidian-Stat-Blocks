@@ -1,7 +1,7 @@
 {
   "id": "obsidian-stat-blocks",
   "name": "Stat Blocks",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "minAppVersion": "1.5.0",
   "description": "Render D&D 5e/5.5e monster stat blocks specified as TOML files nicely in Obsidian vaults.",
   "author": "",
