@@ -19,7 +19,7 @@ import {
   telepathyFt,
   xpForCR,
 } from "./calc";
-import { finalizeDescription, itemSuffix, presetDescription } from "./presets";
+import { finalizeDescription, itemSuffix, presetDescription, spellcastingDetails } from "./presets";
 import { substitute } from "./template";
 
 const EMPTY: ActionItem[] = [];
@@ -302,6 +302,7 @@ class StatBlockRenderer {
   private renderItem(parent: HTMLElement, item: ActionItem): void {
     let name = (item.name ?? "").trim();
     let description = (item.description ?? "").trim();
+    const spellcasting = spellcastingDetails(item, this.monster);
 
     const preset = (item.preset ?? "").trim().toLowerCase();
     if (preset !== "" && preset !== "none") {
@@ -313,12 +314,23 @@ class StatBlockRenderer {
     if (name && !/[.!?:]$/.test(name)) name = `${name}.`;
     description = finalizeDescription(description, this.monster);
 
-    // Render the whole trait as a single markdown paragraph so the bold/italic
-    // name and the description share one <p> (same line, wrapping naturally)
-    // and any markdown formatting in both still resolves.
+    if (spellcasting) {
+      const trait = parent.createEl("div", { cls: "stat-block__trait" });
+      const intro = finalizeDescription(spellcasting.intro, this.monster);
+      this.renderMd(trait, name ? `***${name}*** ${intro}` : intro);
+      const groups = trait.createEl("div", { cls: "stat-block__spell-groups" });
+      for (const group of spellcasting.groups) {
+        const line = groups.createEl("div", { cls: "stat-block__spell-group" });
+        this.renderMd(line, finalizeDescription(group, this.monster));
+      }
+      return;
+    }
+
+    // Use a container because descriptions may contain block Markdown such as
+    // lists. MarkdownRenderer owns the child paragraphs and block elements.
     const md = name ? `***${name}*** ${description}` : description;
-    const p = parent.createEl("p", { cls: "stat-block__trait" });
-    this.renderMd(p, md);
+    const trait = parent.createEl("div", { cls: "stat-block__trait" });
+    this.renderMd(trait, md);
   }
 }
 

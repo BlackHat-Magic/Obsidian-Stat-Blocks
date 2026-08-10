@@ -21,6 +21,11 @@ function spellList(arr: unknown): string {
   return arr.map(italicSpell).filter(Boolean).join(", ");
 }
 
+export interface SpellcastingDetails {
+  intro: string;
+  groups: string[];
+}
+
 /** Suffix appended to an item's name: "(3/Day)" or "(Recharge 5–6)". */
 export function itemSuffix(item: ActionItem): string {
   if (item.uses != null && item.interval) {
@@ -99,59 +104,70 @@ export function presetDescription(item: ActionItem, m: Monster): string | null {
     }
 
     case "spellcasting": {
-      const ability = normalizeAbility(item.ability as string);
-      const abU = ability.toUpperCase();
-      const level = item.level ?? 1;
-      const levelText = levelLabel(level);
-      const cls = item.class ?? "";
-      const spells = item.spells;
-      const lines: string[] = [];
-      lines.push(
-        `${subject(m, true)} is ${levelArticle(levelText)} ${levelText}-level spellcaster. Its spellcasting ability is ${abilityLong(ability)} (spell save DC {{${abU} SAVE}}, {{${abU} ATK}} to hit with spell attacks). ${subject(m, true)} has the following ${cls} spells prepared:`,
-      );
-      lines.push("");
-      if (Array.isArray(spells)) {
-        const cantrips = spells[0];
-        if (Array.isArray(cantrips) && cantrips.length) {
-          lines.push(`- Cantrips (at will): ${spellList(cantrips)}`);
-        }
-        for (let lvl = 1; lvl <= 9; lvl++) {
-          const entry = spells[lvl];
-          if (!Array.isArray(entry) || entry.length < 2) continue;
-          const slots = entry[0];
-          const prepared = entry[1];
-          if (!Array.isArray(prepared) || prepared.length === 0) continue;
-          lines.push(`- ${ordinal(lvl)} level (${slots} slots): ${spellList(prepared)}`);
-        }
-      }
-      return lines.join("\n");
+      const details = spellcastingDetails(item, m);
+      return details ? `${details.intro}\n\n${details.groups.map((group) => `- ${group}`).join("\n")}` : null;
     }
 
     case "innate_spellcasting": {
-      const ability = normalizeAbility(item.ability as string);
-      const abU = ability.toUpperCase();
-      const spells = item.spells;
-      const lines: string[] = [];
-      lines.push(
-        `${subject(m, true)}'s innate spellcasting ability is ${abilityLong(ability)} (spell save DC {{${abU} SAVE}}, {{${abU} ATK}} to hit with spell attacks). ${subject(m, true)} can innately cast the following spells, requiring no material components:`,
-      );
-      lines.push("");
-      if (Array.isArray(spells)) {
-        for (const group of spells) {
-          if (!Array.isArray(group) || group.length < 2) continue;
-          const perDay = group[0];
-          const names = group[1];
-          if (!Array.isArray(names) || names.length === 0) continue;
-          const label = Number(perDay) === -1 ? "At will" : `${perDay}/day each`;
-          lines.push(`- ${label}: ${spellList(names)}`);
-        }
-      }
-      return lines.join("\n");
+      const details = spellcastingDetails(item, m);
+      return details ? `${details.intro}\n\n${details.groups.map((group) => `- ${group}`).join("\n")}` : null;
     }
 
     default:
       return null;
   }
+}
+
+export function spellcastingDetails(item: ActionItem, m: Monster): SpellcastingDetails | null {
+  const preset = (item.preset ?? "").trim().toLowerCase();
+  const ability = normalizeAbility(item.ability as string);
+  const abU = ability.toUpperCase();
+  const groups: string[] = [];
+
+  if (preset === "spellcasting") {
+    const level = item.level ?? 1;
+    const levelText = levelLabel(level);
+    const cls = item.class ?? "";
+    const spells = item.spells;
+    if (Array.isArray(spells)) {
+      const cantrips = spells[0];
+      if (Array.isArray(cantrips) && cantrips.length) {
+        groups.push(`Cantrips (at will): ${spellList(cantrips)}`);
+      }
+      for (let lvl = 1; lvl <= 9; lvl++) {
+        const entry = spells[lvl];
+        if (!Array.isArray(entry) || entry.length < 2) continue;
+        const slots = entry[0];
+        const prepared = entry[1];
+        if (!Array.isArray(prepared) || prepared.length === 0) continue;
+        groups.push(`${ordinal(lvl)} level (${slots} slots): ${spellList(prepared)}`);
+      }
+    }
+    return {
+      intro: `${subject(m, true)} is ${levelArticle(levelText)} ${levelText}-level spellcaster. Its spellcasting ability is ${abilityLong(ability)} (spell save DC {{${abU} SAVE}}, {{${abU} ATK}} to hit with spell attacks). ${subject(m, true)} has the following ${cls} spells prepared:`,
+      groups,
+    };
+  }
+
+  if (preset === "innate_spellcasting") {
+    const spells = item.spells;
+    if (Array.isArray(spells)) {
+      for (const group of spells) {
+        if (!Array.isArray(group) || group.length < 2) continue;
+        const perDay = group[0];
+        const names = group[1];
+        if (!Array.isArray(names) || names.length === 0) continue;
+        const label = Number(perDay) === -1 ? "At will" : `${perDay}/day each`;
+        groups.push(`${label}: ${spellList(names)}`);
+      }
+    }
+    return {
+      intro: `${subject(m, true)}'s innate spellcasting ability is ${abilityLong(ability)} (spell save DC {{${abU} SAVE}}, {{${abU} ATK}} to hit with spell attacks). ${subject(m, true)} can innately cast the following spells, requiring no material components:`,
+      groups,
+    };
+  }
+
+  return null;
 }
 
 /** Substitute {{MON}} etc. in a synthesized/preset description. */

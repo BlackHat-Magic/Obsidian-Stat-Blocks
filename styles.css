@@ -26,6 +26,7 @@
   --sb-muted: var(--text-muted);
   --sb-faint: var(--text-faint);
   --sb-bg: var(--background-secondary);
+  --list-spacing: 0;
 
   background: var(--sb-bg);
   border: 1px solid var(--sb-border);
@@ -141,6 +142,33 @@
 
 .stat-block__trait > p:first-child {
   margin: 0;
+}
+
+.stat-block ul,
+.stat-block ol {
+  margin: 0 !important;
+  padding-left: 1.5em;
+}
+
+.stat-block ul > li,
+.stat-block ol > li {
+  margin: 0 !important;
+  padding-block: 0;
+}
+
+.stat-block ul > li > p,
+.stat-block ol > li > p {
+  margin: 0 !important;
+}
+
+.stat-block__spell-groups {
+  margin: 0.15em 0 0;
+  padding-left: 1.5em;
+}
+
+.stat-block__spell-group,
+.stat-block__spell-group > p {
+  margin: 0 !important;
 }
 
 /* Don't override bold/italic colors — let the active theme style them. */
