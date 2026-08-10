@@ -1,4 +1,5 @@
 import type { ActionItem, AbilityKey, Monster } from "./types";
+import { displayName } from "./calc";
 import { substitute } from "./template";
 
 function ordinal(n: number): string {
@@ -38,6 +39,14 @@ function abilityLong(a: AbilityKey): string {
   return { str: "Strength", dex: "Dexterity", con: "Constitution", int: "Intelligence", wis: "Wisdom", cha: "Charisma" }[a];
 }
 
+function levelLabel(level: number | string): string {
+  return typeof level === "number" ? ordinal(level) : String(level);
+}
+
+function levelArticle(level: string): "a" | "an" {
+  return /^(8|11|18)(?:\D|$)/.test(level) ? "an" : "a";
+}
+
 function normalizeAbility(a: string | undefined): AbilityKey {
   const s = (a ?? "").toLowerCase().trim();
   if (["str", "dex", "con", "int", "wis", "cha"].includes(s)) return s as AbilityKey;
@@ -45,9 +54,7 @@ function normalizeAbility(a: string | undefined): AbilityKey {
 }
 
 function subject(m: Monster, capitalize = false): string {
-  const base = m.shortened_name?.trim() || m.name || "monster";
-  const withArticle = Boolean(m.shortened_name?.trim() && !m.proper_noun);
-  const phrase = withArticle ? `the ${base}` : base;
+  const phrase = displayName(m);
   return capitalize ? phrase.charAt(0).toUpperCase() + phrase.slice(1) : phrase;
 }
 
@@ -95,11 +102,12 @@ export function presetDescription(item: ActionItem, m: Monster): string | null {
       const ability = normalizeAbility(item.ability as string);
       const abU = ability.toUpperCase();
       const level = item.level ?? 1;
+      const levelText = levelLabel(level);
       const cls = item.class ?? "";
       const spells = item.spells;
       const lines: string[] = [];
       lines.push(
-        `${subject(m, true)} is a ${level}-level spellcaster. Its spellcasting ability is ${abilityLong(ability)} (spell save DC {{${abU} SAVE}}, {{${abU} ATK}} to hit with spell attacks). ${subject(m, true)} has the following ${cls} spells prepared:`,
+        `${subject(m, true)} is ${levelArticle(levelText)} ${levelText}-level spellcaster. Its spellcasting ability is ${abilityLong(ability)} (spell save DC {{${abU} SAVE}}, {{${abU} ATK}} to hit with spell attacks). ${subject(m, true)} has the following ${cls} spells prepared:`,
       );
       lines.push("");
       if (Array.isArray(spells)) {

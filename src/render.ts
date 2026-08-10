@@ -260,20 +260,21 @@ class StatBlockRenderer {
   }
 
   private legendaryIntro(): string {
-    const n = displayName(this.monster);
+    const n = capitalizeSentence(displayName(this.monster));
     return `${n} can take 3 legendary actions, choosing from the options below. Only one legendary action option can be used at a time and only at the end of another creature's turn. ${n} regains spent legendary actions at the start of its turn.`;
   }
 
   private defaultVillainIntro(): string {
+    const n = capitalizeSentence(displayName(this.monster));
     return (
-      `${displayName(this.monster)} uses villain actions in place of legendary actions. ` +
+      `${n} uses villain actions in place of legendary actions. ` +
       "A villain action can only be taken on the villain's initiative count or as a reaction " +
       "to a trigger listed in the action. Each villain action can be used once per encounter."
     );
   }
 
   private defaultMythicIntro(): string {
-    const n = displayName(this.monster);
+    const n = capitalizeSentence(displayName(this.monster));
     return (
       `When ${n} drops to 0 hit points, it can choose to undergo a mythic transformation instead ` +
       `of dying, reclaiming vitality. ${n} regains hit points equal to its hit point maximum, ` +
@@ -319,6 +320,10 @@ class StatBlockRenderer {
     const p = parent.createEl("p", { cls: "stat-block__trait" });
     this.renderMd(p, md);
   }
+}
+
+function capitalizeSentence(value: string): string {
+  return value.length === 0 ? value : value[0].toUpperCase() + value.slice(1);
 }
 
 /** Render a stat block from raw TOML source into `el`, using `component` for

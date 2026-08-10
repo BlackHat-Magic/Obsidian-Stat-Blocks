@@ -57,8 +57,22 @@ description = "If {{MON}} has a phylactery, a destroyed lich gains a new body in
 
 [[ability]]
 name = "Spellcasting"
-preset = ""
-description = "{{MON}} is an 18th-level spellcaster. Its spellcasting ability is Intelligence (spell save DC 20, {{INT ATK}} to hit with spell attacks). {{MON}} has the following wizard spells prepared: Cantrips (at will): *mage hand*, *prestidigitation*, *ray of frost*; 1st level (4 slots): *detect magic*, *magic missile*, *shield*, *thunderwave*; 2nd level (3 slots): *detect thoughts*, *invisibility*, *Melf's acid arrow*, *mirror image*; 3rd level (3 slots): *animate dead*, *counterspell*, *dispel magic*, *fireball*; 4th level (3 slots): *blight*, *dimension door*; 5th level (3 slots): *cloudkill*, *scrying*; 6th level (1 slot): *disintegrate*, *globe of invulnerability*; 7th level (1 slot): *finger of death*, *plane shift*; 8th level (1 slot): *dominate monster*, *power word stun*; 9th level (1 slot): *power word kill*."
+preset = "spellcasting"
+level = 18
+ability = "int"
+class = "wizard"
+spells = [
+  ["mage hand", "prestidigitation", "ray of frost"],
+  [4, ["detect magic", "magic missile", "shield", "thunderwave"]],
+  [3, ["detect thoughts", "invisibility", "Melf's acid arrow", "mirror image"]],
+  [3, ["animate dead", "counterspell", "dispel magic", "fireball"]],
+  [3, ["blight", "dimension door"]],
+  [3, ["cloudkill", "scrying"]],
+  [1, ["disintegrate", "globe of invulnerability"]],
+  [1, ["finger of death", "plane shift"]],
+  [1, ["dominate monster", "power word stun"]],
+  [1, ["power word kill"]]
+]
 
 [[ability]]
 name = "Turn Resistance"
