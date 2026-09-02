@@ -110,8 +110,15 @@
 .stat-block__abilities {
   width: 100%;
   border-collapse: collapse;
+  border: 0;
   text-align: center;
   margin: 0.25em 0;
+}
+
+/* Obsidian themes often add a full grid to tables. Keep this table light,
+   with only a quiet rule beneath the labels. */
+.stat-block__abilities :is(th, td) {
+  border: 0;
 }
 
 .stat-block__abilities th {
@@ -120,11 +127,19 @@
   letter-spacing: 0.05em;
   color: var(--sb-muted);
   padding: 0.1em 0.3em;
-  border-bottom: 1px solid var(--sb-border);
+  border-bottom: 1px solid color-mix(in srgb, var(--sb-border) 45%, transparent);
 }
 
 .stat-block__abilities td {
   padding: 0.18em 0.3em;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.stat-block__ability-score,
+.stat-block__ability-mod {
+  display: block;
+  line-height: 1.2;
 }
 
 .stat-block__ability-score {
@@ -133,6 +148,7 @@
 
 .stat-block__ability-mod {
   color: var(--sb-muted);
+  font-size: 0.9em;
 }
 
 .stat-block__challenge {
