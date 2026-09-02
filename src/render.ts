@@ -24,6 +24,138 @@ import { substitute } from "./template";
 
 const EMPTY: ActionItem[] = [];
 
+interface RenderSection {
+  title: string;
+  items: ActionItem[];
+  intro?: string;
+}
+
+interface SectionUnit {
+  sectionIndex: number;
+  itemIndex: number | null;
+  weight: number;
+}
+
+function estimatedTextWeight(value: string | undefined): number {
+  if (!value) return 0;
+  const lines = value.split(/\r?\n/).reduce((total, line) => {
+    const length = line.trim().length;
+    return total + (length === 0 ? 0.5 : Math.max(1, Math.ceil(length / 56)));
+  }, 0);
+  return Math.max(1, lines);
+}
+
+function itemMarkdown(item: ActionItem, monster: Monster): string {
+  let name = (item.name ?? "").trim();
+  let description = (item.description ?? "").trim();
+  const preset = (item.preset ?? "").trim().toLowerCase();
+  if (preset !== "" && preset !== "none") {
+    const generated = presetDescription(item, monster);
+    if (generated != null) description = generated;
+    if (preset === "legendary_resistance" && !name) name = "Legendary Resistance";
+  }
+  name = (name + itemSuffix(item)).trim();
+  if (name && !/[.!?:]$/.test(name)) name = `${name}.`;
+  description = finalizeDescription(description, monster);
+  return name ? `***${name}*** ${description}` : description;
+}
+
+function sectionWeight(section: RenderSection, monster: Monster): number {
+  return (
+    1 +
+    (section.title ? 1.5 : 0) +
+    estimatedTextWeight(section.intro) +
+    section.items.reduce((total, item) => total + estimatedTextWeight(itemMarkdown(item, monster)), 0)
+  );
+}
+
+function preludeWeight(monster: Monster): number {
+  const basics = monster.basics ?? {};
+  const type = [basics.type, basics.tag ? `(${basics.tag})` : ""].filter(Boolean).join(" ");
+  const meta = [basics.size, type, basics.alignment].filter(Boolean).join(", ");
+  const flavor = basics.flavor?.trim();
+  const stats = monster.stats ?? {};
+  const speed = speedList(monster).map((entry) => `${entry.label} ${entry.ft}`).join(", ");
+  const fields = [
+    monster.name,
+    meta,
+    flavor,
+    `Armor Class ${armorClass(monster)}`,
+    `Hit Points ${hitPoints(monster).hp}`,
+    `Speed ${speed}`,
+    ...(monster.proficiencies?.saves ?? []),
+    ...(monster.proficiencies?.skills ?? []),
+    ...(monster.proficiencies?.damage_resistances ?? []),
+    ...(monster.proficiencies?.damage_immunities ?? []),
+    ...(monster.proficiencies?.condition_immunities ?? []),
+    ...(monster.proficiencies?.senses ?? []).map(String),
+    ...(monster.language ?? []).map((language) => language.name),
+    `Challenge ${crLabel(monster.proficiencies?.challenge)}`,
+    `Proficiency Bonus ${proficiencyFromMonster(monster)}`,
+    String(stats.ability_scores ?? []),
+  ];
+  return 4 + fields.reduce((total, field) => total + estimatedTextWeight(field), 0);
+}
+
+function fragmentSections(sections: RenderSection[], units: SectionUnit[]): RenderSection[] {
+  const output: RenderSection[] = [];
+  let cursor = 0;
+  while (cursor < units.length) {
+    const sectionIndex = units[cursor].sectionIndex;
+    const section = sections[sectionIndex];
+    if (!section) break;
+    const firstItem = units[cursor].itemIndex;
+    if (firstItem === null) {
+      output.push(section);
+      cursor += 1;
+      continue;
+    }
+    let end = cursor + 1;
+    while (end < units.length && units[end].sectionIndex === sectionIndex) end += 1;
+    const lastItem = units[end - 1].itemIndex;
+    if (lastItem === null) break;
+    output.push({
+      ...section,
+      title: firstItem === 0 ? section.title : "",
+      intro: firstItem === 0 ? section.intro : undefined,
+      items: section.items.slice(firstItem, lastItem + 1),
+    });
+    cursor = end;
+  }
+  return output;
+}
+
+/** Choose a deterministic item boundary for the optional two-panel layout. */
+function splitSections(sections: RenderSection[], monster: Monster): [RenderSection[], RenderSection[]] {
+  const units: SectionUnit[] = [];
+  for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex += 1) {
+    const section = sections[sectionIndex];
+    if (section.items.length === 0) {
+      units.push({ sectionIndex, itemIndex: null, weight: sectionWeight(section, monster) });
+      continue;
+    }
+    section.items.forEach((item, itemIndex) => {
+      const extra = itemIndex === 0 ? 1 + (section.title ? 1.5 : 0) + estimatedTextWeight(section.intro) : 0;
+      units.push({ sectionIndex, itemIndex, weight: extra + estimatedTextWeight(itemMarkdown(item, monster)) });
+    });
+  }
+  if (units.length <= 1) return [sections, []];
+
+  const total = preludeWeight(monster) + units.reduce((sum, unit) => sum + unit.weight, 0);
+  let left = preludeWeight(monster);
+  let split = 1;
+  let smallestDifference = Number.POSITIVE_INFINITY;
+  for (let index = 1; index < units.length; index += 1) {
+    left += units[index - 1].weight;
+    const difference = Math.abs(left - (total - left));
+    if (difference < smallestDifference) {
+      smallestDifference = difference;
+      split = index;
+    }
+  }
+  return [fragmentSections(sections, units.slice(0, split)), fragmentSections(sections, units.slice(split))];
+}
+
 /** Smart-join a list of damage/condition entries; entries containing commas
  *  are separated with "; " instead of ", ". */
 function joinList(items: string[] | undefined | null): string {
@@ -104,11 +236,27 @@ class StatBlockRenderer {
 
   render(): void {
     const m = this.monster;
-    let el = this.el.createEl("div", { cls: "stat-block" });
+    const twoColumn = m.two_column === true;
+    const el = this.el.createEl("div", { cls: "stat-block" });
+    if (twoColumn) {
+      el.addClass("stat-block--two-column");
+      el.setAttr("data-stat-block-layout", "estimated");
+    }
 
-    // Name
+    let prelude = el;
+    let leftPanel: HTMLElement | null = null;
+    let rightPanel: HTMLElement | null = null;
+    if (twoColumn) {
+      const panels = el.createEl("div", { cls: "stat-block__panels" });
+      leftPanel = panels.createEl("div", { cls: "stat-block__panel stat-block__panel--left" });
+      rightPanel = panels.createEl("div", { cls: "stat-block__panel stat-block__panel--right" });
+      prelude = leftPanel.createEl("div", { cls: "stat-block__prelude" });
+    }
+
+    // Header: name, creature type, alignment, and optional flavor.
+    const header = prelude.createEl("header", { cls: "stat-block__header" });
     const name = (m.name ?? "Monster").trim();
-    el.createEl("h2", { cls: "stat-block__name", text: name });
+    header.createEl("h2", { cls: "stat-block__name", text: name });
 
     // Meta: size type (tag), alignment
     const b = m.basics ?? {};
@@ -116,42 +264,45 @@ class StatBlockRenderer {
     const creatureType = [b.size, typeStr].filter(Boolean).join(" ");
     const metaParts = [creatureType, b.alignment].filter(Boolean).join(", ");
     if (metaParts) {
-      const meta = el.createEl("p", { cls: "stat-block__meta" });
+      const meta = header.createEl("p", { cls: "stat-block__meta" });
       this.renderMd(meta, `*${metaParts}*`);
     }
 
     // Flavor
     if (b.flavor && b.flavor.trim()) {
-      const f = el.createEl("p", { cls: "stat-block__flavor" });
+      const f = header.createEl("p", { cls: "stat-block__flavor" });
       this.renderMd(f, `*${b.flavor.trim()}*`);
     }
 
-    this.divider(el);
+    this.divider(prelude);
+
+    // Core statistics stay together above the ability table.
+    const core = prelude.createEl("section", { cls: "stat-block__core", attr: { "aria-label": "Core statistics" } });
 
     // AC
     const ac = armorClass(m);
     let acText = `**Armor Class** ${ac}`;
     if (m.stats?.armor && m.stats.armor.trim()) acText += ` (${m.stats.armor.trim()})`;
-    const acEl = el.createEl("p", { cls: "stat-block__field" });
+    const acEl = core.createEl("p", { cls: "stat-block__field" });
     this.renderMd(acEl, acText);
 
     // HP
     const { hp, formula } = hitPoints(m);
-    const hpEl = el.createEl("p", { cls: "stat-block__field" });
+    const hpEl = core.createEl("p", { cls: "stat-block__field" });
     this.renderMd(hpEl, `**Hit Points** ${hp} (${formula})`);
 
     // Speed
     const speeds = speedList(m);
     const speedStr = speeds.map((s) => (s.label === "walk" ? `${s.ft} ft.` : `${s.label} ${s.ft} ft.`)).join(", ");
-    const spEl = el.createEl("p", { cls: "stat-block__field" });
+    const spEl = core.createEl("p", { cls: "stat-block__field" });
     this.renderMd(spEl, `**Speed** ${speedStr}`);
 
-    this.divider(el);
+    this.divider(prelude);
 
     // Ability table
     const scores = abilityScores(m);
     const modStr = signedAbilities(m);
-    const table = el.createEl("table", { cls: "stat-block__abilities" });
+    const table = prelude.createEl("table", { cls: "stat-block__abilities" });
     const thead = table.createEl("thead").createEl("tr");
     const tbody = table.createEl("tbody").createEl("tr");
     for (const k of ABILITY_KEYS) {
@@ -161,7 +312,10 @@ class StatBlockRenderer {
       td.createEl("span", { cls: "stat-block__ability-mod", text: ` (${modStr[k]})` });
     }
 
-    this.divider(el);
+    this.divider(prelude);
+
+    // Additional fields stay with the stat-block prelude in two-column mode.
+    const fields = prelude.createEl("section", { cls: "stat-block__fields", attr: { "aria-label": "Additional statistics" } });
 
     // Saving Throws
     const saves = m.proficiencies?.saves ?? [];
@@ -170,7 +324,7 @@ class StatBlockRenderer {
     if (saves.length > 0) {
       const ordered = ABILITY_KEYS.filter((k) => saves.includes(k));
       const list = ordered.map((k) => `${k.toUpperCase()} ${signed(mods[k] + pb)}`).join(", ");
-      const svEl = el.createEl("p", { cls: "stat-block__field" });
+      const svEl = fields.createEl("p", { cls: "stat-block__field" });
       this.renderMd(svEl, `**Saving Throws** ${list}`);
     }
 
@@ -189,23 +343,23 @@ class StatBlockRenderer {
         const bonus = mods[ab] + (isExp ? pb * 2 : pb);
         lines.push(`${skillDisplayName(key)} ${signed(bonus)}${isExp ? " (expertise)" : ""}`);
       }
-      const skEl = el.createEl("p", { cls: "stat-block__field" });
+      const skEl = fields.createEl("p", { cls: "stat-block__field" });
       this.renderMd(skEl, `**Skills** ${lines.join(", ")}`);
     }
 
     const dr = joinList(m.proficiencies?.damage_resistances);
     if (dr) {
-      const dEl = el.createEl("p", { cls: "stat-block__field" });
+      const dEl = fields.createEl("p", { cls: "stat-block__field" });
       this.renderMd(dEl, `**Damage Resistances** ${dr}`);
     }
     const di = joinList(m.proficiencies?.damage_immunities);
     if (di) {
-      const dEl = el.createEl("p", { cls: "stat-block__field" });
+      const dEl = fields.createEl("p", { cls: "stat-block__field" });
       this.renderMd(dEl, `**Damage Immunities** ${di}`);
     }
     const ci = joinList(m.proficiencies?.condition_immunities);
     if (ci) {
-      const dEl = el.createEl("p", { cls: "stat-block__field" });
+      const dEl = fields.createEl("p", { cls: "stat-block__field" });
       this.renderMd(dEl, `**Condition Immunities** ${ci}`);
     }
 
@@ -213,20 +367,20 @@ class StatBlockRenderer {
     const senses = senseList(m);
     const senseParts = senses.map((s) => `${s.label} ${s.ft} ft.`);
     senseParts.push(`passive Perception ${passivePerception(m)}`);
-    const sEl = el.createEl("p", { cls: "stat-block__field" });
+    const sEl = fields.createEl("p", { cls: "stat-block__field" });
     this.renderMd(sEl, `**Senses** ${senseParts.join(", ")}`);
 
     // Languages
     const langsLine = langLine(m.language, telepathyFt(m));
     if (langsLine) {
-      const lEl = el.createEl("p", { cls: "stat-block__field" });
+      const lEl = fields.createEl("p", { cls: "stat-block__field" });
       this.renderMd(lEl, `**Languages** ${langsLine}`);
     }
 
     // Challenge + Proficiency Bonus
     const cr = crLabel(m.proficiencies?.challenge);
     const xp = xpString(m);
-    const chEl = el.createEl("p", { cls: "stat-block__field stat-block__challenge" });
+    const chEl = prelude.createEl("p", { cls: "stat-block__field stat-block__challenge" });
     chEl.createEl("span", {
       text: `Challenge ${cr} (${xp} XP)`,
     });
@@ -234,28 +388,16 @@ class StatBlockRenderer {
     pbSpan.createEl("strong", { text: "Proficiency Bonus " });
     pbSpan.append(`${signed(pb)}`);
 
-    this.divider(el);
+    this.divider(prelude);
 
     // Sections. Traits have no header in the standard 5e layout.
-    this.renderSection(el, "", ensureArr(m.ability));
-    this.renderSection(el, "Actions", ensureArr(m.action));
-    this.renderSection(el, "Bonus Actions", ensureArr(m.bonus_action));
-    this.renderSection(el, "Reactions", ensureArr(m.reaction));
-
-    if (ensureArr(m.legendary_action).length > 0) {
-      this.renderSection(el, "Legendary Actions", ensureArr(m.legendary_action), {
-        intro: substitute(m.legendary_description || this.legendaryIntro(), this.monster),
-      });
-    }
-    if (ensureArr(m.villain_action).length > 0) {
-      this.renderSection(el, "Villain Actions", ensureArr(m.villain_action), {
-        intro: substitute(m.villain_description || this.defaultVillainIntro(), this.monster),
-      });
-    }
-    if (m.is_mythic && (m.is_legendary || m.is_villain) && ensureArr(m.mythic_action).length > 0) {
-      this.renderSection(el, "Mythic Actions", ensureArr(m.mythic_action), {
-        intro: substitute(m.mythic_description || this.defaultMythicIntro(), this.monster),
-      });
+    const sections = this.sections();
+    if (twoColumn && leftPanel && rightPanel) {
+      const [leftSections, rightSections] = splitSections(sections, m);
+      for (const section of leftSections) this.renderSection(leftPanel, section);
+      for (const section of rightSections) this.renderSection(rightPanel, section);
+    } else {
+      for (const section of sections) this.renderSection(el, section);
     }
   }
 
@@ -281,43 +423,52 @@ class StatBlockRenderer {
     );
   }
 
-  private renderSection(
-    parent: HTMLElement,
-    title: string,
-    items: ActionItem[],
-    opts: { intro?: string } = {},
-  ): void {
-    if (!items || items.length === 0) return;
-    if (title) parent.createEl("h3", { cls: "stat-block__section", text: title });
-    if (opts.intro) {
+  private sections(): RenderSection[] {
+    const sections: RenderSection[] = [
+      { title: "", items: ensureArr(this.monster.ability) },
+      { title: "Actions", items: ensureArr(this.monster.action) },
+      { title: "Bonus Actions", items: ensureArr(this.monster.bonus_action) },
+      { title: "Reactions", items: ensureArr(this.monster.reaction) },
+    ];
+    if (this.monster.is_legendary && ensureArr(this.monster.legendary_action).length > 0) {
+      sections.push({
+        title: "Legendary Actions",
+        items: ensureArr(this.monster.legendary_action),
+        intro: substitute(this.monster.legendary_description || this.legendaryIntro(), this.monster),
+      });
+    }
+    if (this.monster.is_villain && ensureArr(this.monster.villain_action).length > 0) {
+      sections.push({
+        title: "Villain Actions",
+        items: ensureArr(this.monster.villain_action),
+        intro: substitute(this.monster.villain_description || this.defaultVillainIntro(), this.monster),
+      });
+    }
+    if (this.monster.is_mythic && (this.monster.is_legendary || this.monster.is_villain) && ensureArr(this.monster.mythic_action).length > 0) {
+      sections.push({
+        title: "Mythic Actions",
+        items: ensureArr(this.monster.mythic_action),
+        intro: substitute(this.monster.mythic_description || this.defaultMythicIntro(), this.monster),
+      });
+    }
+    return sections.filter((section) => section.items.length > 0);
+  }
+
+  private renderSection(parent: HTMLElement, section: RenderSection): void {
+    if (section.title) parent.createEl("h3", { cls: "stat-block__section", text: section.title });
+    if (section.intro) {
       const ip = parent.createEl("p", { cls: "stat-block__section-intro" });
-      this.renderMd(ip, opts.intro);
+      this.renderMd(ip, section.intro);
     }
-    for (const item of items) {
-      this.renderItem(parent, item);
-    }
+    for (const item of section.items) this.renderItem(parent, item);
   }
 
   private renderItem(parent: HTMLElement, item: ActionItem): void {
-    let name = (item.name ?? "").trim();
-    let description = (item.description ?? "").trim();
-
-    const preset = (item.preset ?? "").trim().toLowerCase();
-    if (preset !== "" && preset !== "none") {
-      const synth = presetDescription(item, this.monster);
-      if (synth != null) description = synth;
-      if (preset === "legendary_resistance" && !name) name = "Legendary Resistance";
-    }
-    name = (name + itemSuffix(item)).trim();
-    if (name && !/[.!?:]$/.test(name)) name = `${name}.`;
-    description = finalizeDescription(description, this.monster);
-
     // Render the whole trait as a single markdown paragraph so the bold/italic
     // name and the description share one <p> (same line, wrapping naturally)
     // and any markdown formatting in both still resolves.
-    const md = name ? `***${name}*** ${description}` : description;
     const p = parent.createEl("p", { cls: "stat-block__trait" });
-    this.renderMd(p, md);
+    this.renderMd(p, itemMarkdown(item, this.monster));
   }
 }
 

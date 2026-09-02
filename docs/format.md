@@ -1,5 +1,7 @@
 # Format Tokens
 
+Top-level layout options include `two_column = true` to render a wider, two-panel stat block. The layout collapses to one panel in narrow panes; omit the option (or set it to `false`) for the compact one-column block.
+
 Descriptions support template tokens inside `{{...}}`. Tokens are expanded before the text is rendered as Markdown.
 
 | Token | Result |

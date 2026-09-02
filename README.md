@@ -34,6 +34,7 @@ Copy `main.js`, `manifest.json`, and `styles.css` into `<vault>/.obsidian/plugin
 - Traits, actions, bonus actions, reactions, legendary actions, villain actions, and mythic actions.
 - Markdown rendering inside stat block text, including wiki links, hyperlinks, emphasis, and other formatting.
 - Theme-aware styling using Obsidian CSS variables.
+- Optional responsive two-panel stat blocks with `two_column = true`.
 
 ## Project Stack
 

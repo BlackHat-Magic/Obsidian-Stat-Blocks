@@ -5,6 +5,7 @@
  */
 
 .stat-block-container {
+  width: 100%;
   margin: 0.75em 0;
 }
 
@@ -27,6 +28,10 @@
   --sb-faint: var(--text-faint);
   --sb-bg: var(--background-secondary);
 
+  width: min(100%, 400px);
+  min-width: 0;
+  margin-inline: auto;
+  box-sizing: border-box;
   background: var(--sb-bg);
   border: 1px solid var(--sb-border);
   border-top-width: 3px;
@@ -72,6 +77,31 @@
   margin: 0.18em 0;
   line-height: 1.4;
 }
+
+.stat-block__core,
+.stat-block__fields {
+  display: block;
+}
+
+.stat-block--two-column {
+  width: min(100%, 800px);
+}
+
+.stat-block--two-column .stat-block__panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.stat-block--two-column .stat-block__panel {
+  min-width: 0;
+}
+
+.stat-block--two-column .stat-block__prelude {
+  min-width: 0;
+}
+
 
 .stat-block__field > p {
   margin: 0;
@@ -165,6 +195,17 @@
   margin: 0.3em 0 0;
   font-size: 0.85em;
   color: var(--text-normal);
+}
+
+@media (max-width: 720px) {
+  .stat-block--two-column {
+    width: min(100%, 400px);
+  }
+
+  .stat-block--two-column .stat-block__panels {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
 }
 
 /* Editor: ensure monster codeblock content reads like TOML by keeping

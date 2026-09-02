@@ -68,7 +68,7 @@ Use escaped TOML quotes where necessary, or single-quoted TOML strings when a va
 
 The main sections are:
 
-- Top-level identity and flags: `name`, `shortened_name`, `shortened_plural`, `proper_noun`, `is_legendary`, `is_villain`, `is_mythic`, and their descriptions. Set `proper_noun = false` with `shortened_name = "dragon"` to make `{{MON}}` render as `the dragon`.
+- Top-level identity and flags: `name`, `shortened_name`, `shortened_plural`, `proper_noun`, `two_column`, `is_legendary`, `is_villain`, `is_mythic`, and their descriptions. Set `two_column = true` for the wider responsive two-panel layout. Set `proper_noun = false` with `shortened_name = "dragon"` to make `{{MON}}` render as `the dragon`.
 - `[basics]`: `size`, `type`, `tag`, `alignment`, `flavor`.
 - `[stats]`: AC inputs, armor note, hit-dice count, speeds, and the six ability scores.
 - `[proficiencies]`: saves, skills, expertise, defenses, senses, and challenge rating.
