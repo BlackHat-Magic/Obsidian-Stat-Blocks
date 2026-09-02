@@ -28,6 +28,7 @@ interface RenderSection {
   title: string;
   items: ActionItem[];
   intro?: string;
+  traits?: boolean;
 }
 
 interface SectionUnit {
@@ -179,8 +180,8 @@ class StatBlockRenderer {
     return render;
   }
 
-  private divider(parent: HTMLElement, cls = "stat-block__divider"): HTMLHRElement {
-    return parent.createEl("hr", { cls });
+  private divider(parent: HTMLElement, cls = "stat-block__rule"): HTMLDivElement {
+    return parent.createEl("div", { cls });
   }
 
   // AC / HP / speed rows are emitted directly via MarkdownRenderer.render,
@@ -216,13 +217,13 @@ class StatBlockRenderer {
     const creatureType = [b.size, typeStr].filter(Boolean).join(" ");
     const metaParts = [creatureType, b.alignment].filter(Boolean).join(", ");
     if (metaParts) {
-      const meta = header.createEl("p", { cls: "stat-block__meta" });
+      const meta = header.createEl("div", { cls: "stat-block__meta" });
       this.renderMd(meta, `*${metaParts}*`);
     }
 
     // Flavor
     if (b.flavor && b.flavor.trim()) {
-      const f = header.createEl("p", { cls: "stat-block__flavor" });
+      const f = header.createEl("div", { cls: "stat-block__flavor" });
       this.renderMd(f, `*${b.flavor.trim()}*`);
     }
 
@@ -235,18 +236,18 @@ class StatBlockRenderer {
     const ac = armorClass(m);
     let acText = `**Armor Class** ${ac}`;
     if (m.stats?.armor && m.stats.armor.trim()) acText += ` (${m.stats.armor.trim()})`;
-    const acEl = core.createEl("p", { cls: "stat-block__field" });
+    const acEl = core.createEl("div", { cls: "preview-field" });
     this.renderMd(acEl, acText);
 
     // HP
     const { hp, formula } = hitPoints(m);
-    const hpEl = core.createEl("p", { cls: "stat-block__field" });
+    const hpEl = core.createEl("div", { cls: "preview-field" });
     this.renderMd(hpEl, `**Hit Points** ${hp} (${formula})`);
 
     // Speed
     const speeds = speedList(m);
     const speedStr = speeds.map((s) => (s.label === "walk" ? `${s.ft} ft.` : `${s.label} ${s.ft} ft.`)).join(", ");
-    const spEl = core.createEl("p", { cls: "stat-block__field" });
+    const spEl = core.createEl("div", { cls: "preview-field" });
     this.renderMd(spEl, `**Speed** ${speedStr}`);
 
     this.divider(prelude);
@@ -254,7 +255,8 @@ class StatBlockRenderer {
     // Ability table
     const scores = abilityScores(m);
     const modStr = signedAbilities(m);
-    const table = prelude.createEl("table", { cls: "stat-block__abilities" });
+    const abilitiesScroll = prelude.createEl("div", { cls: "preview-abilities__scroll" });
+    const table = abilitiesScroll.createEl("table", { cls: "stat-block__abilities preview-abilities__table", attr: { "aria-label": "Ability scores" } });
     const thead = table.createEl("thead").createEl("tr");
     const tbody = table.createEl("tbody").createEl("tr");
     for (const k of ABILITY_KEYS) {
@@ -276,7 +278,7 @@ class StatBlockRenderer {
     if (saves.length > 0) {
       const ordered = ABILITY_KEYS.filter((k) => saves.includes(k));
       const list = ordered.map((k) => `${k.toUpperCase()} ${signed(mods[k] + pb)}`).join(", ");
-      const svEl = fields.createEl("p", { cls: "stat-block__field" });
+      const svEl = fields.createEl("div", { cls: "preview-field" });
       this.renderMd(svEl, `**Saving Throws** ${list}`);
     }
 
@@ -295,23 +297,23 @@ class StatBlockRenderer {
         const bonus = mods[ab] + (isExp ? pb * 2 : pb);
         lines.push(`${skillDisplayName(key)} ${signed(bonus)}${isExp ? " (expertise)" : ""}`);
       }
-      const skEl = fields.createEl("p", { cls: "stat-block__field" });
+      const skEl = fields.createEl("div", { cls: "preview-field" });
       this.renderMd(skEl, `**Skills** ${lines.join(", ")}`);
     }
 
     const dr = joinList(m.proficiencies?.damage_resistances);
     if (dr) {
-      const dEl = fields.createEl("p", { cls: "stat-block__field" });
+      const dEl = fields.createEl("div", { cls: "preview-field" });
       this.renderMd(dEl, `**Damage Resistances** ${dr}`);
     }
     const di = joinList(m.proficiencies?.damage_immunities);
     if (di) {
-      const dEl = fields.createEl("p", { cls: "stat-block__field" });
+      const dEl = fields.createEl("div", { cls: "preview-field" });
       this.renderMd(dEl, `**Damage Immunities** ${di}`);
     }
     const ci = joinList(m.proficiencies?.condition_immunities);
     if (ci) {
-      const dEl = fields.createEl("p", { cls: "stat-block__field" });
+      const dEl = fields.createEl("div", { cls: "preview-field" });
       this.renderMd(dEl, `**Condition Immunities** ${ci}`);
     }
 
@@ -319,20 +321,20 @@ class StatBlockRenderer {
     const senses = senseList(m);
     const senseParts = senses.map((s) => `${s.label} ${s.ft} ft.`);
     senseParts.push(`passive Perception ${passivePerception(m)}`);
-    const sEl = fields.createEl("p", { cls: "stat-block__field" });
+    const sEl = fields.createEl("div", { cls: "preview-field" });
     this.renderMd(sEl, `**Senses** ${senseParts.join(", ")}`);
 
     // Languages
     const langsLine = langLine(m.language, telepathyFt(m));
     if (langsLine) {
-      const lEl = fields.createEl("p", { cls: "stat-block__field" });
+      const lEl = fields.createEl("div", { cls: "preview-field" });
       this.renderMd(lEl, `**Languages** ${langsLine}`);
     }
 
     // Challenge + Proficiency Bonus
     const cr = crLabel(m.proficiencies?.challenge);
     const xp = xpString(m);
-    const chEl = prelude.createEl("p", { cls: "stat-block__field stat-block__challenge" });
+    const chEl = prelude.createEl("div", { cls: "stat-block__challenge" });
     chEl.createEl("span", {
       text: `Challenge ${cr} (${xp} XP)`,
     });
@@ -340,7 +342,7 @@ class StatBlockRenderer {
     pbSpan.createEl("strong", { text: "Proficiency Bonus " });
     pbSpan.append(`${signed(pb)}`);
 
-    this.divider(prelude);
+    this.divider(prelude, "stat-block__rule stat-block__rule--thin");
 
     // Sections. Traits have no header in the standard 5e layout.
     const sections = this.sections();
@@ -382,7 +384,7 @@ class StatBlockRenderer {
 
   private sections(): RenderSection[] {
     const sections: RenderSection[] = [
-      { title: "", items: ensureArr(this.monster.ability) },
+      { title: "", items: ensureArr(this.monster.ability), traits: true },
       { title: "Actions", items: ensureArr(this.monster.action) },
       { title: "Bonus Actions", items: ensureArr(this.monster.bonus_action) },
       { title: "Reactions", items: ensureArr(this.monster.reaction) },
@@ -580,20 +582,23 @@ class StatBlockRenderer {
   }
 
   private async renderSection(parent: HTMLElement, section: RenderSection): Promise<void> {
-    if (section.title) parent.createEl("h3", { cls: "stat-block__section", text: section.title });
+    const sectionEl = parent.createEl("section", {
+      cls: section.traits ? "preview-section preview-section--traits" : "preview-section",
+    });
+    if (section.title) sectionEl.createEl("h3", { text: section.title });
     if (section.intro) {
-      const ip = parent.createEl("p", { cls: "stat-block__section-intro" });
-      await this.renderMd(ip, section.intro);
+      const intro = sectionEl.createEl("div", { cls: "preview-section__intro" });
+      await this.renderMd(intro, section.intro);
     }
-    for (const item of section.items) await this.renderItem(parent, item);
+    const items = sectionEl.createEl("div", { cls: "preview-section__items" });
+    for (const item of section.items) await this.renderItem(items, item);
   }
 
   private async renderItem(parent: HTMLElement, item: ActionItem): Promise<void> {
-    // Render the whole trait as a single markdown paragraph so the bold/italic
-    // name and the description share one <p> (same line, wrapping naturally)
-    // and any markdown formatting in both still resolves.
-    const p = parent.createEl("p", { cls: "stat-block__trait" });
-    await this.renderMd(p, itemMarkdown(item, this.monster));
+    // Match the web app's action wrapper: MarkdownRenderer supplies the inner
+    // paragraph while the wrapper controls the action typography and spacing.
+    const action = parent.createEl("div", { cls: "preview-action" });
+    await this.renderMd(action, itemMarkdown(item, this.monster));
   }
 }
 
