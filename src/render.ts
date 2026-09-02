@@ -33,16 +33,6 @@ interface RenderSection {
 interface SectionUnit {
   sectionIndex: number;
   itemIndex: number | null;
-  weight: number;
-}
-
-function estimatedTextWeight(value: string | undefined): number {
-  if (!value) return 0;
-  const lines = value.split(/\r?\n/).reduce((total, line) => {
-    const length = line.trim().length;
-    return total + (length === 0 ? 0.5 : Math.max(1, Math.ceil(length / 56)));
-  }, 0);
-  return Math.max(1, lines);
 }
 
 function itemMarkdown(item: ActionItem, monster: Monster): string {
@@ -58,43 +48,6 @@ function itemMarkdown(item: ActionItem, monster: Monster): string {
   if (name && !/[.!?:]$/.test(name)) name = `${name}.`;
   description = finalizeDescription(description, monster);
   return name ? `***${name}*** ${description}` : description;
-}
-
-function sectionWeight(section: RenderSection, monster: Monster): number {
-  return (
-    1 +
-    (section.title ? 1.5 : 0) +
-    estimatedTextWeight(section.intro) +
-    section.items.reduce((total, item) => total + estimatedTextWeight(itemMarkdown(item, monster)), 0)
-  );
-}
-
-function preludeWeight(monster: Monster): number {
-  const basics = monster.basics ?? {};
-  const type = [basics.type, basics.tag ? `(${basics.tag})` : ""].filter(Boolean).join(" ");
-  const meta = [basics.size, type, basics.alignment].filter(Boolean).join(", ");
-  const flavor = basics.flavor?.trim();
-  const stats = monster.stats ?? {};
-  const speed = speedList(monster).map((entry) => `${entry.label} ${entry.ft}`).join(", ");
-  const fields = [
-    monster.name,
-    meta,
-    flavor,
-    `Armor Class ${armorClass(monster)}`,
-    `Hit Points ${hitPoints(monster).hp}`,
-    `Speed ${speed}`,
-    ...(monster.proficiencies?.saves ?? []),
-    ...(monster.proficiencies?.skills ?? []),
-    ...(monster.proficiencies?.damage_resistances ?? []),
-    ...(monster.proficiencies?.damage_immunities ?? []),
-    ...(monster.proficiencies?.condition_immunities ?? []),
-    ...(monster.proficiencies?.senses ?? []).map(String),
-    ...(monster.language ?? []).map((language) => language.name),
-    `Challenge ${crLabel(monster.proficiencies?.challenge)}`,
-    `Proficiency Bonus ${proficiencyFromMonster(monster)}`,
-    String(stats.ability_scores ?? []),
-  ];
-  return 4 + fields.reduce((total, field) => total + estimatedTextWeight(field), 0);
 }
 
 function fragmentSections(sections: RenderSection[], units: SectionUnit[]): RenderSection[] {
@@ -126,34 +79,27 @@ function fragmentSections(sections: RenderSection[], units: SectionUnit[]): Rend
 }
 
 /** Choose a deterministic item boundary for the optional two-panel layout. */
-function splitSections(sections: RenderSection[], monster: Monster): [RenderSection[], RenderSection[]] {
+function sectionUnits(sections: RenderSection[]): SectionUnit[] {
   const units: SectionUnit[] = [];
   for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex += 1) {
     const section = sections[sectionIndex];
     if (section.items.length === 0) {
-      units.push({ sectionIndex, itemIndex: null, weight: sectionWeight(section, monster) });
+      units.push({ sectionIndex, itemIndex: null });
       continue;
     }
-    section.items.forEach((item, itemIndex) => {
-      const extra = itemIndex === 0 ? 1 + (section.title ? 1.5 : 0) + estimatedTextWeight(section.intro) : 0;
-      units.push({ sectionIndex, itemIndex, weight: extra + estimatedTextWeight(itemMarkdown(item, monster)) });
-    });
+    section.items.forEach((_, itemIndex) => units.push({ sectionIndex, itemIndex }));
   }
-  if (units.length <= 1) return [sections, []];
+  return units;
+}
 
-  const total = preludeWeight(monster) + units.reduce((sum, unit) => sum + unit.weight, 0);
-  let left = preludeWeight(monster);
-  let split = 1;
-  let smallestDifference = Number.POSITIVE_INFINITY;
-  for (let index = 1; index < units.length; index += 1) {
-    left += units[index - 1].weight;
-    const difference = Math.abs(left - (total - left));
-    if (difference < smallestDifference) {
-      smallestDifference = difference;
-      split = index;
-    }
-  }
+function sectionsAtBoundary(sections: RenderSection[], units: SectionUnit[], split: number): [RenderSection[], RenderSection[]] {
   return [fragmentSections(sections, units.slice(0, split)), fragmentSections(sections, units.slice(split))];
+}
+
+function sectionCandidates(sections: RenderSection[]): Array<[RenderSection[], RenderSection[]]> {
+  const units = sectionUnits(sections);
+  if (units.length <= 1) return [[sections, []]];
+  return Array.from({ length: units.length - 1 }, (_, index) => sectionsAtBoundary(sections, units, index + 1));
 }
 
 /** Smart-join a list of damage/condition entries; entries containing commas
@@ -214,6 +160,7 @@ class StatBlockRenderer {
   private sourcePath: string;
   private component: Component;
   private monster: Monster;
+  private pendingMarkdownRenders: Array<Promise<void>> = [];
 
   constructor(app: App, el: HTMLElement, sourcePath: string, component: Component, monster: Monster) {
     this.app = app;
@@ -223,8 +170,13 @@ class StatBlockRenderer {
     this.monster = monster;
   }
 
-  private renderMd(target: HTMLElement, md: string): void {
-    MarkdownRenderer.render(this.app, md, target, this.sourcePath, this.component);
+  private renderMd(target: HTMLElement, md: string): Promise<void> {
+    const render = Promise.resolve(MarkdownRenderer.render(this.app, md, target, this.sourcePath, this.component))
+      .catch((error) => {
+        console.error("Stat Blocks: failed to render Markdown", error);
+      });
+    this.pendingMarkdownRenders.push(render);
+    return render;
   }
 
   private divider(parent: HTMLElement, cls = "stat-block__divider"): HTMLHRElement {
@@ -393,11 +345,16 @@ class StatBlockRenderer {
     // Sections. Traits have no header in the standard 5e layout.
     const sections = this.sections();
     if (twoColumn && leftPanel && rightPanel) {
-      const [leftSections, rightSections] = splitSections(sections, m);
-      for (const section of leftSections) this.renderSection(leftPanel, section);
-      for (const section of rightSections) this.renderSection(rightPanel, section);
+      const leftSections = leftPanel.createEl("div", { cls: "stat-block__sections" });
+      const rightSections = rightPanel.createEl("div", { cls: "stat-block__sections" });
+      const candidates = sectionCandidates(sections);
+      const [initialLeft, initialRight] = candidates[0] ?? [sections, []];
+      void Promise.allSettled(this.pendingMarkdownRenders)
+        .then(() => this.renderSectionList(leftSections, initialLeft))
+        .then(() => this.renderSectionList(rightSections, initialRight))
+        .then(() => this.scheduleMeasuredBalance(el, leftSections, rightSections, candidates));
     } else {
-      for (const section of sections) this.renderSection(el, section);
+      void this.renderSectionList(el, sections);
     }
   }
 
@@ -454,21 +411,189 @@ class StatBlockRenderer {
     return sections.filter((section) => section.items.length > 0);
   }
 
-  private renderSection(parent: HTMLElement, section: RenderSection): void {
+  private async renderSectionList(parent: HTMLElement, sections: RenderSection[]): Promise<void> {
+    parent.empty();
+    for (const section of sections) await this.renderSection(parent, section);
+  }
+
+  /**
+   * Measure every legal item boundary in the real rendered panels. Text length
+   * is not a useful proxy here: fonts, Markdown, wrapping, and theme CSS all
+   * change the actual height. The final candidate is the one with the
+   * smallest measured height difference.
+   */
+  private scheduleMeasuredBalance(
+    statBlock: HTMLElement,
+    leftSections: HTMLElement,
+    rightSections: HTMLElement,
+    candidates: Array<[RenderSection[], RenderSection[]]>,
+  ): void {
+    if (candidates.length <= 1 || typeof window.requestAnimationFrame !== "function") {
+      statBlock.setAttr("data-stat-block-layout", "measured");
+      return;
+    }
+
+    let measuring = false;
+    let pendingInvalidation = false;
+    let suppressResizeInvalidation = false;
+    let measurementFrame: number | null = null;
+    let releaseTimer: ReturnType<typeof setTimeout> | null = null;
+    let generation = 0;
+
+    const cancelMeasurement = (): void => {
+      generation += 1;
+      if (measurementFrame !== null) window.cancelAnimationFrame(measurementFrame);
+      measurementFrame = null;
+      if (releaseTimer !== null) clearTimeout(releaseTimer);
+      releaseTimer = null;
+      measuring = false;
+      pendingInvalidation = false;
+      suppressResizeInvalidation = false;
+    };
+
+    const waitForFrame = (): Promise<void> => new Promise((resolve) => {
+      measurementFrame = window.requestAnimationFrame(() => {
+        measurementFrame = null;
+        resolve();
+      });
+    });
+
+    const finishMeasurement = (currentGeneration: number, differences: number[]): void => {
+      if (currentGeneration !== generation || statBlock.getBoundingClientRect().width <= 0) return;
+      const bestIndex = differences.reduce(
+        (best, difference, index) => difference < differences[best] ? index : best,
+        0,
+      );
+      const [bestLeft, bestRight] = candidates[bestIndex];
+      void Promise.all([
+        this.renderSectionList(leftSections, bestLeft),
+        this.renderSectionList(rightSections, bestRight),
+      ]).then(() => {
+        if (currentGeneration !== generation || statBlock.getBoundingClientRect().width <= 0) return;
+        statBlock.setAttr("data-stat-block-layout", "measured");
+        measuring = false;
+        suppressResizeInvalidation = true;
+        releaseTimer = setTimeout(() => {
+          suppressResizeInvalidation = false;
+          releaseTimer = null;
+          if (pendingInvalidation) {
+            pendingInvalidation = false;
+            beginMeasurement();
+          }
+        }, 0);
+      });
+    };
+
+    const beginMeasurement = (): void => {
+      if (measuring) return;
+      if (measurementFrame !== null) window.cancelAnimationFrame(measurementFrame);
+      measurementFrame = null;
+      measuring = true;
+      pendingInvalidation = false;
+      const currentGeneration = ++generation;
+
+      const sweepCandidates = async (): Promise<number[] | null> => {
+        await waitForFrame();
+        while (currentGeneration === generation && statBlock.getBoundingClientRect().width <= 0) {
+          await waitForFrame();
+        }
+        if (currentGeneration !== generation) return null;
+
+        const differences: number[] = [];
+        for (const [candidateLeft, candidateRight] of candidates) {
+          if (currentGeneration !== generation) return null;
+          const candidate = statBlock.cloneNode(true) as HTMLElement;
+          candidate.style.position = "fixed";
+          candidate.style.left = "-100000px";
+          candidate.style.top = "0";
+          candidate.style.visibility = "hidden";
+          candidate.style.pointerEvents = "none";
+          candidate.style.width = `${statBlock.getBoundingClientRect().width}px`;
+          candidate.style.margin = "0";
+          document.body.appendChild(candidate);
+          try {
+            const candidateLeftSections = candidate.querySelector<HTMLElement>(".stat-block__panel--left > .stat-block__sections");
+            const candidateRightSections = candidate.querySelector<HTMLElement>(".stat-block__panel--right > .stat-block__sections");
+            if (!candidateLeftSections || !candidateRightSections) return null;
+            await Promise.all([
+              this.renderSectionList(candidateLeftSections, candidateLeft),
+              this.renderSectionList(candidateRightSections, candidateRight),
+            ]);
+            if (currentGeneration !== generation) return null;
+            await waitForFrame();
+            if (currentGeneration !== generation) return null;
+            const candidateLeftPanel = candidate.querySelector<HTMLElement>(".stat-block__panel--left");
+            const candidateRightPanel = candidate.querySelector<HTMLElement>(".stat-block__panel--right");
+            if (!candidateLeftPanel || !candidateRightPanel) return null;
+            differences.push(Math.abs(
+              candidateLeftPanel.getBoundingClientRect().height - candidateRightPanel.getBoundingClientRect().height,
+            ));
+          } finally {
+            candidate.remove();
+          }
+        }
+        return differences;
+      };
+
+      void sweepCandidates().then((differences) => {
+        if (differences === null || currentGeneration !== generation) return;
+        finishMeasurement(currentGeneration, differences);
+      }).catch((error) => {
+        if (currentGeneration !== generation) return;
+        measuring = false;
+        console.error("Stat Blocks: failed to measure two-column layout", error);
+      });
+    };
+
+    const invalidateFromResize = (): void => {
+      if (statBlock.getBoundingClientRect().width <= 0 || suppressResizeInvalidation || measuring || measurementFrame !== null) return;
+      beginMeasurement();
+    };
+
+    const invalidateFromExternalChange = (): void => {
+      if (statBlock.getBoundingClientRect().width <= 0 || suppressResizeInvalidation) return;
+      if (measuring || measurementFrame !== null) {
+        pendingInvalidation = true;
+        return;
+      }
+      beginMeasurement();
+    };
+
+    const resizeObserver = typeof ResizeObserver === "function" ? new ResizeObserver(invalidateFromResize) : undefined;
+    resizeObserver?.observe(statBlock);
+    resizeObserver?.observe(leftSections);
+    resizeObserver?.observe(rightSections);
+    window.addEventListener("resize", invalidateFromExternalChange);
+    const fontSet = document.fonts;
+    fontSet?.addEventListener("loadingdone", invalidateFromExternalChange);
+    statBlock.addEventListener("load", invalidateFromExternalChange, true);
+
+    this.component.register(() => {
+      cancelMeasurement();
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", invalidateFromExternalChange);
+      fontSet?.removeEventListener("loadingdone", invalidateFromExternalChange);
+      statBlock.removeEventListener("load", invalidateFromExternalChange, true);
+    });
+
+    beginMeasurement();
+  }
+
+  private async renderSection(parent: HTMLElement, section: RenderSection): Promise<void> {
     if (section.title) parent.createEl("h3", { cls: "stat-block__section", text: section.title });
     if (section.intro) {
       const ip = parent.createEl("p", { cls: "stat-block__section-intro" });
-      this.renderMd(ip, section.intro);
+      await this.renderMd(ip, section.intro);
     }
-    for (const item of section.items) this.renderItem(parent, item);
+    for (const item of section.items) await this.renderItem(parent, item);
   }
 
-  private renderItem(parent: HTMLElement, item: ActionItem): void {
+  private async renderItem(parent: HTMLElement, item: ActionItem): Promise<void> {
     // Render the whole trait as a single markdown paragraph so the bold/italic
     // name and the description share one <p> (same line, wrapping naturally)
     // and any markdown formatting in both still resolves.
     const p = parent.createEl("p", { cls: "stat-block__trait" });
-    this.renderMd(p, itemMarkdown(item, this.monster));
+    await this.renderMd(p, itemMarkdown(item, this.monster));
   }
 }
 
